@@ -10,8 +10,20 @@ const esquemaPublico = z.object({
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
 });
 
+const opcional = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.trim() ? v.trim() : undefined));
+
 const esquemaServidor = esquemaPublico.extend({
   SUPABASE_SECRET_KEY: z.string().min(1),
+  // Opcionales al arrancar: cada integración las exige al usarse (requerirEnv).
+  ENCRYPTION_KEY: opcional,
+  META_APP_SECRET: opcional,
+  META_VERIFY_TOKEN: opcional,
+  META_GRAPH_VERSION: opcional.transform((v) => v ?? "v23.0"),
+  CORREO_ENTRANTE_DOMINIO: opcional,
+  CORREO_ENTRANTE_SECRETO: opcional,
 });
 
 export type EnvPublico = z.infer<typeof esquemaPublico>;
@@ -50,10 +62,29 @@ export function envServidor(): EnvServidor {
   const r = esquemaServidor.safeParse({
     ...valoresPublicos(),
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
+    ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+    META_APP_SECRET: process.env.META_APP_SECRET,
+    META_VERIFY_TOKEN: process.env.META_VERIFY_TOKEN,
+    META_GRAPH_VERSION: process.env.META_GRAPH_VERSION,
+    CORREO_ENTRANTE_DOMINIO: process.env.CORREO_ENTRANTE_DOMINIO,
+    CORREO_ENTRANTE_SECRETO: process.env.CORREO_ENTRANTE_SECRETO,
   });
   if (!r.success) {
     throw new Error(`Variables de entorno inválidas (revisa .env.local): ${formatearError(r.error)}`);
   }
   cacheServidor = r.data;
   return cacheServidor;
+}
+
+type ClaveOpcional = {
+  [K in keyof EnvServidor]: undefined extends EnvServidor[K] ? K : never;
+}[keyof EnvServidor];
+
+/** Lee una variable opcional que una integración necesita; truena con un mensaje claro si falta. */
+export function requerirEnv<K extends ClaveOpcional>(clave: K): NonNullable<EnvServidor[K]> {
+  const valor = envServidor()[clave];
+  if (valor === undefined || valor === null) {
+    throw new Error(`Falta la variable de entorno ${String(clave)} (ver .env.example)`);
+  }
+  return valor as NonNullable<EnvServidor[K]>;
 }
