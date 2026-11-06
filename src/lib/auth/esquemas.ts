@@ -109,3 +109,14 @@ export function objetoDeFormulario(fd: FormData): Record<string, string> {
   });
   return salida;
 }
+
+export const esquemaPerfil = z.object({
+  nombre: nombrePersona,
+  telefono: telefonoOpcional,
+  googleCalendarId: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .transform((v) => v || "primary"),
+});

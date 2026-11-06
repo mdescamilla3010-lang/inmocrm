@@ -4,12 +4,12 @@ import { dejariaSinDueno, navegacionPara, puedeAdministrarEquipo, puedeVerReport
 describe("navegacionPara", () => {
   it("el dueño ve reportes y configuración", () => {
     const hrefs = navegacionPara("dueno").map((i) => i.href);
-    expect(hrefs).toEqual(["/leads", "/citas", "/propiedades", "/reportes", "/configuracion"]);
+    expect(hrefs).toEqual(["/leads", "/citas", "/propiedades", "/reportes", "/configuracion", "/perfil"]);
   });
 
   it("el asesor no ve reportes ni configuración", () => {
     const hrefs = navegacionPara("asesor").map((i) => i.href);
-    expect(hrefs).toEqual(["/leads", "/citas", "/propiedades"]);
+    expect(hrefs).toEqual(["/leads", "/citas", "/propiedades", "/perfil"]);
   });
 });
 

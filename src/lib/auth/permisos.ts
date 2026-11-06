@@ -14,6 +14,7 @@ const NAVEGACION: readonly ItemNavegacion[] = [
   { href: "/propiedades", etiqueta: "Propiedades", roles: ["dueno", "asesor"] },
   { href: "/reportes", etiqueta: "Reportes", roles: ["dueno"] },
   { href: "/configuracion", etiqueta: "Configuración", roles: ["dueno"] },
+  { href: "/perfil", etiqueta: "Mi perfil", roles: ["dueno", "asesor"] },
 ];
 
 export function navegacionPara(rol: Rol): ItemNavegacion[] {
