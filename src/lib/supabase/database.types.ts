@@ -43,6 +43,61 @@ export type Database = {
           },
         ];
       };
+      capturas_lead: {
+        Row: {
+          actualizado_en: string;
+          creado_en: string;
+          detalle: string | null;
+          fuente: Database["public"]["Enums"]["fuente_lead"];
+          id: string;
+          id_externo: string | null;
+          inmobiliaria_id: string;
+          lead_id: string | null;
+          payload: NonNullable<Json>;
+          resultado: Database["public"]["Enums"]["resultado_captura"];
+        };
+        ComputedFields: never;
+        Insert: {
+          actualizado_en?: string;
+          creado_en?: string;
+          detalle?: string | null;
+          fuente: Database["public"]["Enums"]["fuente_lead"];
+          id?: string;
+          id_externo?: string | null;
+          inmobiliaria_id: string;
+          lead_id?: string | null;
+          payload?: NonNullable<Json>;
+          resultado?: Database["public"]["Enums"]["resultado_captura"];
+        };
+        Update: {
+          actualizado_en?: string;
+          creado_en?: string;
+          detalle?: string | null;
+          fuente?: Database["public"]["Enums"]["fuente_lead"];
+          id?: string;
+          id_externo?: string | null;
+          inmobiliaria_id?: string;
+          lead_id?: string | null;
+          payload?: NonNullable<Json>;
+          resultado?: Database["public"]["Enums"]["resultado_captura"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capturas_lead_inmobiliaria_id_fkey";
+            columns: ["inmobiliaria_id"];
+            isOneToOne: false;
+            referencedRelation: "inmobiliarias";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "capturas_lead_inmobiliaria_id_lead_id_fkey";
+            columns: ["inmobiliaria_id", "lead_id"];
+            isOneToOne: false;
+            referencedRelation: "leads";
+            referencedColumns: ["inmobiliaria_id", "id"];
+          },
+        ];
+      };
       citas: {
         Row: {
           actualizado_en: string;
@@ -224,7 +279,6 @@ export type Database = {
           id: string;
           nombre: string;
           slug: string;
-          ultimo_asesor_asignado_id: string | null;
           zona_horaria: string;
         };
         ComputedFields: never;
@@ -240,7 +294,6 @@ export type Database = {
           id?: string;
           nombre: string;
           slug: string;
-          ultimo_asesor_asignado_id?: string | null;
           zona_horaria?: string;
         };
         Update: {
@@ -255,18 +308,9 @@ export type Database = {
           id?: string;
           nombre?: string;
           slug?: string;
-          ultimo_asesor_asignado_id?: string | null;
           zona_horaria?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "inmobiliarias_ultimo_asesor_fk";
-            columns: ["id", "ultimo_asesor_asignado_id"];
-            isOneToOne: false;
-            referencedRelation: "usuarios";
-            referencedColumns: ["inmobiliaria_id", "id"];
-          },
-        ];
+        Relationships: [];
       };
       integraciones: {
         Row: {
@@ -773,6 +817,7 @@ export type Database = {
           recibe_leads: boolean;
           rol: Database["public"]["Enums"]["rol_usuario"];
           telefono: string | null;
+          ultima_asignacion_en: string | null;
         };
         ComputedFields: never;
         Insert: {
@@ -787,6 +832,7 @@ export type Database = {
           recibe_leads?: boolean;
           rol: Database["public"]["Enums"]["rol_usuario"];
           telefono?: string | null;
+          ultima_asignacion_en?: string | null;
         };
         Update: {
           activo?: boolean;
@@ -800,6 +846,7 @@ export type Database = {
           recibe_leads?: boolean;
           rol?: Database["public"]["Enums"]["rol_usuario"];
           telefono?: string | null;
+          ultima_asignacion_en?: string | null;
         };
         Relationships: [
           {
@@ -853,6 +900,10 @@ export type Database = {
         Args: { p_nombre: string; p_nombre_dueno: string; p_slug: string };
         Returns: string;
       };
+      siguiente_asesor_round_robin: {
+        Args: { p_candidatos: string[]; p_inmobiliaria_id: string };
+        Returns: string;
+      };
     };
     Enums: {
       autor_mensaje: "prospecto" | "agente" | "asesor" | "sistema";
@@ -893,6 +944,8 @@ export type Database = {
       operacion_propiedad: "venta" | "renta";
       proveedor_integracion:
         "whatsapp_cloud" | "twilio" | "google_calendar" | "meta_leads";
+      resultado_captura:
+        "procesando" | "creado" | "recapturado" | "descartado" | "error";
       rol_usuario: "dueno" | "asesor";
       score_lead: "caliente" | "tibio" | "frio";
       tipo_propiedad:
@@ -1107,6 +1160,13 @@ export const Constants = {
         "twilio",
         "google_calendar",
         "meta_leads",
+      ],
+      resultado_captura: [
+        "procesando",
+        "creado",
+        "recapturado",
+        "descartado",
+        "error",
       ],
       rol_usuario: ["dueno", "asesor"],
       score_lead: ["caliente", "tibio", "frio"],
