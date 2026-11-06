@@ -1,0 +1,58 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import { Aviso } from "@/components/ui/aviso";
+import { BotonEnviar } from "@/components/ui/boton-enviar";
+import { Campo } from "@/components/ui/campo";
+import { estadoInicial, type EstadoFormulario } from "@/lib/formularios";
+
+type Accion = (estado: EstadoFormulario, fd: FormData) => Promise<EstadoFormulario>;
+
+export function FormPaginaMeta({ accion }: { accion: Accion }) {
+  const [estado, enviar] = useActionState(accion, estadoInicial);
+  const v = estado.valores ?? {};
+  const e = estado.errores ?? {};
+  return (
+    <form key={estado.ok} action={enviar} className="space-y-3" noValidate>
+      {estado.error ? <Aviso tipo="error">{estado.error}</Aviso> : null}
+      {estado.ok ? <Aviso tipo="ok">{estado.ok}</Aviso> : null}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Campo etiqueta="ID de la página" name="pageId" inputMode="numeric" defaultValue={v.pageId} error={e.pageId} />
+        <Campo etiqueta="Nombre (para identificarla)" name="nombre" defaultValue={v.nombre} error={e.nombre} placeholder="Casas del Bajío" />
+      </div>
+      <Campo
+        etiqueta="Token de acceso de la página"
+        name="token"
+        type="password"
+        autoComplete="off"
+        error={e.token}
+        ayuda="Token de larga duración con permiso leads_retrieval. Se guarda cifrado y nadie lo puede volver a ver."
+      />
+      <BotonEnviar textoEnviando="Conectando…">Conectar página</BotonEnviar>
+    </form>
+  );
+}
+
+export function Copiable({ texto, multilinea = false }: { texto: string; multilinea?: boolean }) {
+  const [copiado, setCopiado] = useState(false);
+  return (
+    <div className="relative">
+      {multilinea ? (
+        <pre className="max-h-72 overflow-auto rounded-lg bg-slate-900 p-3 pr-20 text-xs text-slate-100">{texto}</pre>
+      ) : (
+        <code className="block overflow-x-auto rounded-lg bg-slate-100 px-3 py-2 pr-20 text-sm text-slate-800">{texto}</code>
+      )}
+      <button
+        type="button"
+        onClick={async () => {
+          await navigator.clipboard.writeText(texto);
+          setCopiado(true);
+          setTimeout(() => setCopiado(false), 1500);
+        }}
+        className="absolute right-2 top-1.5 rounded-md bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+      >
+        {copiado ? "¡Copiado!" : "Copiar"}
+      </button>
+    </div>
+  );
+}

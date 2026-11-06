@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { codigoFormularioLanding, esquemaPaginaMeta } from "./integraciones";
 import { esquemaLanding } from "./landing";
 import { camposParaCompletar } from "./recaptura";
 
@@ -60,5 +61,20 @@ describe("camposParaCompletar", () => {
 
   it("no cambia nada si no hay datos nuevos", () => {
     expect(camposParaCompletar(existente, { nombre: null, email: null })).toEqual({});
+  });
+});
+
+describe("integraciones", () => {
+  it("el código de landing trae endpoint, clave y honeypot", () => {
+    const html = codigoFormularioLanding("https://app.mx/api/leads/landing", clave);
+    expect(html).toContain('action="https://app.mx/api/leads/landing"');
+    expect(html).toContain(`value="${clave}"`);
+    expect(html).toContain('name="sitio_web"');
+  });
+
+  it("valida página de Meta", () => {
+    expect(esquemaPaginaMeta.safeParse({ pageId: "1234567890", token: "x".repeat(30) }).success).toBe(true);
+    expect(esquemaPaginaMeta.safeParse({ pageId: "mi-pagina", token: "x".repeat(30) }).success).toBe(false);
+    expect(esquemaPaginaMeta.safeParse({ pageId: "1234567890", token: "corto" }).success).toBe(false);
   });
 });
