@@ -79,6 +79,8 @@ Captura de leads (landing, Meta, correos de portales): ver [`docs/captura-de-lea
 
 Agente de WhatsApp (configuración, plantillas y cómo probarlo en la terminal con `pnpm agente:probar`): ver [`docs/agente-whatsapp.md`](docs/agente-whatsapp.md).
 
+Agenda y Google Calendar: ver [`docs/agenda-google-calendar.md`](docs/agenda-google-calendar.md).
+
 Verificación:
 
 ```bash

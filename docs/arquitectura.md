@@ -172,3 +172,14 @@ futuras se pueden revisar al llegar a esa fase.
 - **Bajas**: "BAJA", "STOP", "no me escriban"… se detectan sin IA (`esSolicitudDeBaja`); se marca `opt_out`, se cancelan seguimientos y se confirma una sola vez. Si la persona vuelve a escribir por su cuenta, se retoma.
 - **Visitas (provisional hasta la fase 4)**: el agente registra la disponibilidad en `leads.interes_visita` y marca la conversación como "requiere atención" para que el asesor confirme. La fase 4 lo reemplaza por horarios reales de Google Calendar.
 - **Twilio**: `ProveedorTwilio` y su parser/firma están implementados y probados detrás de la misma interfaz; falta sólo la ruta del webhook de Twilio y su formulario de conexión cuando se decida usarlo.
+
+### Decisiones técnicas de la fase 4
+
+- **Disponibilidad** = horario de visitas de la inmobiliaria − citas activas del asesor − ocupado en su Google Calendar, con margen de traslado (default 30 min) y anticipación mínima (default 2 h), en horarios cada 30 min durante 14 días. Cálculo puro en `lib/calendario/disponibilidad.ts`; la conversión hora local ↔ UTC usa `Intl` (probada con Ciudad de México y con Tijuana, que tiene horario de verano).
+- **Google Calendar sin `googleapis`**: `fetch` directo a OAuth, free/busy y eventos (`lib/calendario/google.ts`) detrás de `ProveedorCalendario`. Permisos mínimos: `calendar.freebusy` + `calendar.events`. El `state` de OAuth va firmado (HMAC) con caducidad de 10 min y debe coincidir con el usuario con sesión.
+- **Fallo de Google = no ofrecer horarios**: mejor registrar la preferencia que arriesgar un empalme con la agenda personal. Un token revocado marca la conexión como inactiva y el asesor ve "debe reconectar".
+- **Doble validación al agendar**: se recalcula la disponibilidad justo antes de guardar y la restricción `citas_sin_empalmes` de la base impide choques aunque dos procesos agenden a la vez. Si el evento de Google falla, la cita se conserva en InmoCRM.
+- **El agente nunca confirma una visita que `agendar_cita` no guardó**; reprogramar = cancelar + ofrecer de nuevo. `registrar_interes_visita` queda como respaldo cuando ningún horario le acomoda.
+- **Visitas en la línea de tiempo** por trigger (agendada, cancelada con motivo, realizada, no asistió).
+- **Agendar desde el panel**: horarios libres o uno manual (el asesor puede acordar fuera del horario de visitas; la base igual impide empalmes).
+- **Mi perfil**: cada usuario conecta su calendario y registra su WhatsApp para recibir avisos; incluye "Cerrar sesión" (en móvil el botón de la barra lateral no se mostraba).

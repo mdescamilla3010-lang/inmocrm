@@ -13,6 +13,7 @@ Prospecto escribe ─► Meta ─► POST /api/webhooks/whatsapp (firma verifica
                                    │                               │
                                    │        guardar_calificacion ─► score determinista
                                    │        buscar_propiedades   ─► recomendador
+                                   │        ofrecer_horarios / agendar_cita ─► agenda (ver agenda-google-calendar.md)
                                    │        escalar_a_asesor     ─► IA en pausa + aviso
                                    ▼
                      respuesta por WhatsApp + mensaje guardado
@@ -67,9 +68,11 @@ Cada mensaje es una llamada real a la API.
 2. "Busco casa en Jurica, tengo como 2 millones con Infonavit" → guarda zona,
    presupuesto y forma de pago; busca y ofrece la casa que acepta Infonavit.
 3. "Ya estoy precalificado, me quiero cambiar este mes" → el score sube a caliente.
-4. "¿Puedo verla el sábado en la mañana?" → registra interés de visita.
-5. "¿Me dejan en 1.7?" → escala a un asesor (negociación) y se despide.
-6. En otra sesión: "BAJA" → confirma y no vuelve a escribir.
+4. "¿Puedo verla el sábado en la mañana?" → ofrece horarios reales del sábado
+   antes de las 13:00; al elegir uno, agenda la visita y da la dirección.
+5. "Mejor el lunes en la tarde" → cancela y ofrece horarios del lunes.
+6. "¿Me dejan en 1.7?" → escala a un asesor (negociación) y se despide.
+7. En otra sesión: "BAJA" → confirma y no vuelve a escribir.
 
 ## Operación
 
