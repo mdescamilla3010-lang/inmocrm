@@ -295,6 +295,8 @@ export type Database = {
           id: string;
           margen_traslado_min: number;
           nombre: string;
+          reactivacion_activa: boolean;
+          recordatorios_activos: boolean;
           slug: string;
           zona_horaria: string;
         };
@@ -312,6 +314,8 @@ export type Database = {
           id?: string;
           margen_traslado_min?: number;
           nombre: string;
+          reactivacion_activa?: boolean;
+          recordatorios_activos?: boolean;
           slug: string;
           zona_horaria?: string;
         };
@@ -328,6 +332,8 @@ export type Database = {
           id?: string;
           margen_traslado_min?: number;
           nombre?: string;
+          reactivacion_activa?: boolean;
+          recordatorios_activos?: boolean;
           slug?: string;
           zona_horaria?: string;
         };
@@ -772,6 +778,7 @@ export type Database = {
       };
       seguimientos: {
         Row: {
+          actualizado_en: string;
           cita_id: string | null;
           creado_en: string;
           ejecutado_en: string | null;
@@ -786,6 +793,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          actualizado_en?: string;
           cita_id?: string | null;
           creado_en?: string;
           ejecutado_en?: string | null;
@@ -799,6 +807,7 @@ export type Database = {
           ultimo_error?: string | null;
         };
         Update: {
+          actualizado_en?: string;
           cita_id?: string | null;
           creado_en?: string;
           ejecutado_en?: string | null;
@@ -927,6 +936,29 @@ export type Database = {
       liberar_turno_agente: {
         Args: { p_conversacion_id: string };
         Returns: undefined;
+      };
+      reclamar_seguimientos: {
+        Args: { p_limite: number };
+        Returns: {
+          actualizado_en: string;
+          cita_id: string | null;
+          creado_en: string;
+          ejecutado_en: string | null;
+          estado: Database["public"]["Enums"]["estado_seguimiento"];
+          id: string;
+          inmobiliaria_id: string;
+          intentos: number;
+          lead_id: string;
+          programado_para: string;
+          tipo: Database["public"]["Enums"]["tipo_seguimiento"];
+          ultimo_error: string | null;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "seguimientos";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       reclamar_turno_agente: {
         Args: { p_conversacion_id: string; p_segundos: number };
