@@ -81,6 +81,8 @@ Agente de WhatsApp (configuración, plantillas y cómo probarlo en la terminal c
 
 Agenda y Google Calendar: ver [`docs/agenda-google-calendar.md`](docs/agenda-google-calendar.md).
 
+Recordatorios y reactivación (plantillas y cron): ver [`docs/seguimientos.md`](docs/seguimientos.md).
+
 Verificación:
 
 ```bash

@@ -183,3 +183,12 @@ futuras se pueden revisar al llegar a esa fase.
 - **Visitas en la línea de tiempo** por trigger (agendada, cancelada con motivo, realizada, no asistió).
 - **Agendar desde el panel**: horarios libres o uno manual (el asesor puede acordar fuera del horario de visitas; la base igual impide empalmes).
 - **Mi perfil**: cada usuario conecta su calendario y registra su WhatsApp para recibir avisos; incluye "Cerrar sesión" (en móvil el botón de la barra lateral no se mostraba).
+
+### Decisiones técnicas de la fase 5
+
+- **Programar en la base, decidir al enviar**: triggers en `citas`, `leads` y `conversaciones` crean/mueven/cancelan filas de `seguimientos`; el ejecutor revisa con `decidirSeguimiento` (puro, probado) si todavía aplica. Así ningún flujo tiene que acordarse de programar recordatorios.
+- **Reactivación sólo de leads fríos o sin respuesta**, contada desde la captura o el último mensaje del prospecto (si escribe, se reinicia). No a leads manuales, con visita, cerrados, atendidos por un asesor o con baja. Un seguimiento con más de 2 días de atraso (cron caído) se descarta en vez de mandarse desfasado.
+- **Ventana de 24 h**: texto libre dentro de la ventana; fuera, plantilla aprobada (recordatorio: nombre, día y hora, lugar; reactivación: nombre, inmobiliaria). Sin plantilla no se envía.
+- **Cron**: `reclamar_seguimientos()` con `for update skip locked` (varias ejecuciones no toman la misma fila) y rescate de filas atoradas en "procesando". pg_cron + pg_net con URL y secreto en Vault; la migración lo omite donde no existen esas extensiones. Alternativa documentada: Vercel Cron.
+- **Reintentos**: 15 y 30 min; al tercer intento, "fallido" (visible en el lead).
+- **`confirmar_cita`**: el agente marca la visita como confirmada cuando el prospecto responde al recordatorio.
