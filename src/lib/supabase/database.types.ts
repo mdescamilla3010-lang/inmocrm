@@ -178,38 +178,50 @@ export type Database = {
       conversaciones: {
         Row: {
           actualizado_en: string;
+          agente_ocupado_hasta: string | null;
           canal: string;
           cerrada_en: string | null;
           creado_en: string;
+          escalada_en: string | null;
           ia_activa: boolean;
           id: string;
           inmobiliaria_id: string;
           lead_id: string;
+          motivo_escalamiento: string | null;
+          requiere_atencion: boolean;
           resumen: string | null;
           ultimo_entrante_en: string | null;
         };
         ComputedFields: never;
         Insert: {
           actualizado_en?: string;
+          agente_ocupado_hasta?: string | null;
           canal?: string;
           cerrada_en?: string | null;
           creado_en?: string;
+          escalada_en?: string | null;
           ia_activa?: boolean;
           id?: string;
           inmobiliaria_id: string;
           lead_id: string;
+          motivo_escalamiento?: string | null;
+          requiere_atencion?: boolean;
           resumen?: string | null;
           ultimo_entrante_en?: string | null;
         };
         Update: {
           actualizado_en?: string;
+          agente_ocupado_hasta?: string | null;
           canal?: string;
           cerrada_en?: string | null;
           creado_en?: string;
+          escalada_en?: string | null;
           ia_activa?: boolean;
           id?: string;
           inmobiliaria_id?: string;
           lead_id?: string;
+          motivo_escalamiento?: string | null;
+          requiere_atencion?: boolean;
           resumen?: string | null;
           ultimo_entrante_en?: string | null;
         };
@@ -902,6 +914,14 @@ export type Database = {
       crear_inmobiliaria: {
         Args: { p_nombre: string; p_nombre_dueno: string; p_slug: string };
         Returns: string;
+      };
+      liberar_turno_agente: {
+        Args: { p_conversacion_id: string };
+        Returns: undefined;
+      };
+      reclamar_turno_agente: {
+        Args: { p_conversacion_id: string; p_segundos: number };
+        Returns: boolean;
       };
       siguiente_asesor_round_robin: {
         Args: { p_candidatos: string[]; p_inmobiliaria_id: string };
