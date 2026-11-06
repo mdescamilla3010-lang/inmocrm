@@ -30,6 +30,8 @@ const esquemaServidor = esquemaPublico.extend({
   WHATSAPP_APP_SECRET: opcional,
   WHATSAPP_VERIFY_TOKEN: opcional,
   AGENTE_ESPERA_MS: z.coerce.number().int().min(0).max(30_000).default(3000),
+  GOOGLE_CLIENT_ID: opcional,
+  GOOGLE_CLIENT_SECRET: opcional,
 });
 
 export type EnvPublico = z.infer<typeof esquemaPublico>;
@@ -80,6 +82,8 @@ export function envServidor(): EnvServidor {
     WHATSAPP_APP_SECRET: process.env.WHATSAPP_APP_SECRET,
     WHATSAPP_VERIFY_TOKEN: process.env.WHATSAPP_VERIFY_TOKEN,
     AGENTE_ESPERA_MS: process.env.AGENTE_ESPERA_MS || undefined,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   });
   if (!r.success) {
     throw new Error(`Variables de entorno inválidas (revisa .env.local): ${formatearError(r.error)}`);
