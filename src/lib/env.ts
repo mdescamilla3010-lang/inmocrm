@@ -24,6 +24,12 @@ const esquemaServidor = esquemaPublico.extend({
   META_GRAPH_VERSION: opcional.transform((v) => v ?? "v23.0"),
   CORREO_ENTRANTE_DOMINIO: opcional,
   CORREO_ENTRANTE_SECRETO: opcional,
+  ANTHROPIC_API_KEY: opcional,
+  ANTHROPIC_MODEL: opcional.transform((v) => v ?? "claude-opus-5-5"),
+  ANTHROPIC_EFFORT: z.enum(["low", "medium", "high", "xhigh", "max"]).default("medium"),
+  WHATSAPP_APP_SECRET: opcional,
+  WHATSAPP_VERIFY_TOKEN: opcional,
+  AGENTE_ESPERA_MS: z.coerce.number().int().min(0).max(30_000).default(3000),
 });
 
 export type EnvPublico = z.infer<typeof esquemaPublico>;
@@ -68,6 +74,12 @@ export function envServidor(): EnvServidor {
     META_GRAPH_VERSION: process.env.META_GRAPH_VERSION,
     CORREO_ENTRANTE_DOMINIO: process.env.CORREO_ENTRANTE_DOMINIO,
     CORREO_ENTRANTE_SECRETO: process.env.CORREO_ENTRANTE_SECRETO,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
+    ANTHROPIC_EFFORT: process.env.ANTHROPIC_EFFORT || undefined,
+    WHATSAPP_APP_SECRET: process.env.WHATSAPP_APP_SECRET,
+    WHATSAPP_VERIFY_TOKEN: process.env.WHATSAPP_VERIFY_TOKEN,
+    AGENTE_ESPERA_MS: process.env.AGENTE_ESPERA_MS || undefined,
   });
   if (!r.success) {
     throw new Error(`Variables de entorno inválidas (revisa .env.local): ${formatearError(r.error)}`);

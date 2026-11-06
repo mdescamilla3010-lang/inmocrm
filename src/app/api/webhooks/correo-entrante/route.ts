@@ -1,4 +1,5 @@
 import { after, NextResponse, type NextRequest } from "next/server";
+import { enviarPrimerContacto } from "@/lib/conversaciones/servicio";
 import { requerirEnv } from "@/lib/env";
 import { abrirCaptura, capturarLead, cerrarCaptura } from "@/lib/leads/captura";
 import { slugDeDestinatarios } from "@/lib/leads/correo/destinatario";
@@ -11,6 +12,8 @@ import { crearClienteAdmin } from "@/lib/supabase/admin";
  * Webhook de correo entrante (Postmark Inbound). La URL se configura con
  * Basic auth: https://postmark:<CORREO_ENTRANTE_SECRETO>@app/api/webhooks/correo-entrante
  */
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const contrasena = contrasenaBasic(request.headers.get("authorization"));
   if (!contrasena || !secretosIguales(contrasena, requerirEnv("CORREO_ENTRANTE_SECRETO"))) {
@@ -75,6 +78,10 @@ async function procesarCorreo(correo: CorreoEntrante) {
       datosCrudos: { de: correo.de, asunto: correo.asunto, message_id: correo.messageId },
     });
     await cerrarCaptura(admin, { inmobiliariaId: inmo.id, capturaId, resultado: resultado.tipo, leadId: resultado.leadId });
+    if (resultado.tipo === "creado") {
+      // Un fallo de WhatsApp no debe marcar la captura como error: el lead ya existe.
+      await enviarPrimerContacto(admin, inmo.id, resultado.leadId).catch((e) => console.error("[correo-entrante] primer contacto", e));
+    }
   } catch (e) {
     await cerrarCaptura(admin, {
       inmobiliariaId: inmo.id,

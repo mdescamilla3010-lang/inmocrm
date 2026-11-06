@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
+import { enviarPrimerContacto } from "@/lib/conversaciones/servicio";
 import { esquemaLanding } from "@/lib/leads/landing";
 import { abrirCaptura, capturarLead, cerrarCaptura } from "@/lib/leads/captura";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
@@ -74,6 +75,9 @@ export async function POST(request: NextRequest) {
         resultado: resultado.tipo,
         leadId: resultado.leadId,
       });
+    }
+    if (resultado.tipo === "creado") {
+      after(() => enviarPrimerContacto(admin, inmo.id, resultado.leadId).catch((e) => console.error("[landing] primer contacto", e)));
     }
   } catch (e) {
     if (capturaId) {

@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
 import { ejecutarBucle, type ClienteModelo } from "./bucle";
-import { construirHistorial, mensajesPrevios } from "./contexto";
+import { construirHistorial, describirEstadoLead, mensajesPrevios } from "./contexto";
 import { ESQUEMAS, HERRAMIENTAS } from "./herramientas";
 import { construirPromptSistema, describirHorario } from "./prompt";
 
@@ -98,6 +98,59 @@ describe("construirHistorial", () => {
 
   it("mensajesPrevios devuelve lo que mandamos antes de que respondiera", () => {
     expect(mensajesPrevios([f("saliente", "Plantilla"), f("entrante", "Hola"), f("saliente", "x")])).toEqual(["Plantilla"]);
+  });
+});
+
+describe("describirEstadoLead", () => {
+  it("lista sólo lo conocido, lo que falta y lo que ya se le envió", () => {
+    const texto = describirEstadoLead(
+      {
+        nombre: "Ana",
+        fuente: "Meta Ads",
+        mensajeInicial: null,
+        propiedadInteres: null,
+        operacion: "venta",
+        tipoPropiedad: null,
+        zona: "Juriquilla",
+        presupuestoMin: 2_000_000,
+        presupuestoMax: 3_000_000,
+        formaPago: "infonavit",
+        creditoPreaprobado: true,
+        urgencia: null,
+        recamarasMin: null,
+        interesVisita: null,
+        score: "tibio",
+        faltantes: ["urgencia", "tipo de propiedad"],
+        asesor: "Luis",
+        previos: ["Hola Ana, gracias por tu interés"],
+      },
+      "sábado 8 de noviembre, 10:15",
+    );
+    expect(texto).toBe(
+      [
+        "Hora local: sábado 8 de noviembre, 10:15.",
+        "Estado del lead (actualizado):",
+        "- Nombre: Ana",
+        "- Llegó por: Meta Ads",
+        "- Operación: venta",
+        "- Zona: Juriquilla",
+        "- Presupuesto: $2,000,000 a $3,000,000",
+        "- Forma de pago: infonavit (preaprobado)",
+        "- Score actual: tibio",
+        "- Asesor asignado: Luis",
+        "Falta averiguar: urgencia, tipo de propiedad.",
+        'Antes de que respondiera le enviamos: "Hola Ana, gracias por tu interés"',
+      ].join("\n"),
+    );
+  });
+
+  it("sin datos lo dice explícitamente", () => {
+    const vacio = {
+      nombre: null, fuente: "WhatsApp", mensajeInicial: null, propiedadInteres: null, operacion: null, tipoPropiedad: null,
+      zona: null, presupuestoMin: null, presupuestoMax: null, formaPago: null, creditoPreaprobado: null, urgencia: null,
+      recamarasMin: null, interesVisita: null, score: null, faltantes: [], asesor: null, previos: [],
+    };
+    expect(describirEstadoLead(vacio, "x")).toContain("- Llegó por: WhatsApp");
   });
 });
 

@@ -1,10 +1,14 @@
 import { after, NextResponse, type NextRequest } from "next/server";
+import { enviarPrimerContacto } from "@/lib/conversaciones/servicio";
 import { descifrar } from "@/lib/cripto";
 import { envServidor, requerirEnv } from "@/lib/env";
 import { abrirCaptura, capturarLead, cerrarCaptura } from "@/lib/leads/captura";
 import { mapearCamposMeta, parsearWebhookMeta, resumirRespuestas, verificarFirmaMeta, type AvisoLeadMeta } from "@/lib/leads/meta";
 import { obtenerLeadMeta } from "@/lib/leads/meta-graph";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
+
+// Incluye el primer mensaje de WhatsApp al lead dentro de after().
+export const maxDuration = 60;
 
 /** Verificación de la suscripción del webhook (configuración en Meta for Developers). */
 export function GET(request: NextRequest) {
@@ -98,6 +102,10 @@ async function procesarAviso(aviso: AvisoLeadMeta) {
       datosCrudos: lead,
     });
     await cerrarCaptura(admin, { inmobiliariaId, capturaId, resultado: resultado.tipo, leadId: resultado.leadId });
+    if (resultado.tipo === "creado") {
+      // Un fallo de WhatsApp no debe marcar la captura como error: el lead ya existe.
+      await enviarPrimerContacto(admin, inmobiliariaId, resultado.leadId).catch((e) => console.error("[meta-leads] primer contacto", e));
+    }
   } catch (e) {
     await cerrarCaptura(admin, { inmobiliariaId, capturaId, resultado: "error", detalle: e instanceof Error ? e.message : String(e) });
     throw e;

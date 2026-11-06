@@ -15,6 +15,9 @@ alter table public.conversaciones
 create index conversaciones_atencion_idx
   on public.conversaciones (inmobiliaria_id) where requiere_atencion;
 
+-- Disponibilidad que dio el prospecto para visitar (la fase 4 la convierte en cita).
+alter table public.leads add column interes_visita text;
+
 -- -----------------------------------------------------------------------------
 -- Reclamo atómico del turno del agente. Devuelve true si este proceso puede
 -- responder; el reclamo caduca solo (por si el proceso muere a medias).

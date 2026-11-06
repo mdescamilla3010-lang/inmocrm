@@ -397,6 +397,7 @@ export type Database = {
           fuente_detalle: NonNullable<Json>;
           id: string;
           inmobiliaria_id: string;
+          interes_visita: string | null;
           mensaje_inicial: string | null;
           nombre: string | null;
           notas_calificacion: string | null;
@@ -435,6 +436,7 @@ export type Database = {
           fuente_detalle?: NonNullable<Json>;
           id?: string;
           inmobiliaria_id: string;
+          interes_visita?: string | null;
           mensaje_inicial?: string | null;
           nombre?: string | null;
           notas_calificacion?: string | null;
@@ -472,6 +474,7 @@ export type Database = {
           fuente_detalle?: NonNullable<Json>;
           id?: string;
           inmobiliaria_id?: string;
+          interes_visita?: string | null;
           mensaje_inicial?: string | null;
           nombre?: string | null;
           notas_calificacion?: string | null;

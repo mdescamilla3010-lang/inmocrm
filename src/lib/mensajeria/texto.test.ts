@@ -1,3 +1,4 @@
+import { rellenarPlantilla } from "./config";
 import { describe, expect, it } from "vitest";
 import { dentroDeVentana } from "./tipos";
 import { dividirMensaje, esSolicitudDeBaja } from "./texto";
@@ -40,5 +41,12 @@ describe("dentroDeVentana", () => {
     expect(dentroDeVentana("2026-11-07T13:00:00Z", ahora)).toBe(true);
     expect(dentroDeVentana("2026-11-07T11:00:00Z", ahora)).toBe(false);
     expect(dentroDeVentana(null, ahora)).toBe(false);
+  });
+});
+
+
+describe("rellenarPlantilla", () => {
+  it("sustituye parámetros y deja los que faltan", () => {
+    expect(rellenarPlantilla("Hola {{1}}, soy de {{2}}. {{3}}", ["Ana", "Casas"])).toBe("Hola Ana, soy de Casas. {{3}}");
   });
 });
