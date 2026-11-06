@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Conversacion } from "@/components/leads/conversacion";
 import { InsigniaEstado, InsigniaScore } from "@/components/leads/insignias";
 import { requerirUsuario } from "@/lib/auth/sesion";
 import { formatearFechaHora, formatearPesos, haceCuanto } from "@/lib/formato";
@@ -8,7 +9,16 @@ import { ETIQUETA_FUENTE } from "@/lib/leads/etiquetas";
 import { describirEvento } from "@/lib/leads/eventos";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { formatearTelefono } from "@/lib/telefono";
-import { agregarNota, cambiarEstado, guardarCalificacion, guardarContacto, reasignarLead } from "./acciones";
+import {
+  agregarNota,
+  cambiarControlIA,
+  cambiarEstado,
+  enviarMensajeAsesor,
+  guardarCalificacion,
+  guardarContacto,
+  marcarAtendido,
+  reasignarLead,
+} from "./acciones";
 import { FormCalificacion, FormContacto, FormEstado, FormNota, FormReasignar } from "./formularios";
 
 export const metadata: Metadata = { title: "Lead" };
@@ -30,11 +40,21 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
     .maybeSingle();
   if (!lead) notFound();
 
-  const [{ data: equipo }, { data: zonas }, { data: eventos }] = await Promise.all([
+  const [{ data: equipo }, { data: zonas }, { data: eventos }, { data: conversacion }, { data: inmo }] = await Promise.all([
     supabase.from("usuarios").select("id, nombre, activo").order("nombre"),
     supabase.from("zonas").select("id, nombre").order("nombre"),
     supabase.from("eventos_lead").select("id, tipo, datos, usuario_id, creado_en").eq("lead_id", id).order("creado_en", { ascending: false }).order("id", { ascending: false }).limit(100),
+    supabase.from("conversaciones").select("id, ia_activa, requiere_atencion, motivo_escalamiento, resumen, ultimo_entrante_en").eq("lead_id", id).maybeSingle(),
+    supabase.from("inmobiliarias").select("agente_nombre").eq("id", usuario.inmobiliariaId).single(),
   ]);
+  const { data: mensajes } = conversacion
+    ? await supabase
+        .from("mensajes")
+        .select("id, direccion, autor, asesor_id, tipo, contenido, estado, error, creado_en, metadatos")
+        .eq("conversacion_id", conversacion.id)
+        .order("creado_en")
+        .limit(300)
+    : { data: [] };
   const nombres = Object.fromEntries((equipo ?? []).map((u) => [u.id, u.nombre]));
   const zh = usuario.inmobiliaria.zonaHoraria;
   const detalle = (lead.fuente_detalle ?? {}) as Record<string, unknown>;
@@ -93,6 +113,7 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
                   : "—"}
               </Dato>
               {lead.score_motivo ? <Dato etiqueta="Motivo del score">{lead.score_motivo}</Dato> : null}
+              {lead.interes_visita ? <Dato etiqueta="Quiere visitar">{lead.interes_visita}</Dato> : null}
             </dl>
             {lead.mensaje_inicial ? (
               <blockquote className="mt-4 whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{lead.mensaje_inicial}</blockquote>
@@ -120,7 +141,19 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
           </Tarjeta>
 
           <Tarjeta titulo="Conversación de WhatsApp">
-            <p className="text-sm text-slate-600">La conversación con el agente de IA aparecerá aquí en la fase 3.</p>
+            <Conversacion
+              conversacion={conversacion}
+              mensajes={mensajes ?? []}
+              nombres={nombres}
+              zonaHoraria={zh}
+              nombreAgente={inmo?.agente_nombre ?? "Agente"}
+              acciones={{
+                tomar: cambiarControlIA.bind(null, lead.id, false),
+                devolver: cambiarControlIA.bind(null, lead.id, true),
+                atendido: marcarAtendido.bind(null, lead.id),
+                enviar: enviarMensajeAsesor.bind(null, lead.id),
+              }}
+            />
           </Tarjeta>
         </div>
 

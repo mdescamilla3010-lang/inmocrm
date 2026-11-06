@@ -7,6 +7,11 @@ import type { EstadoFormulario } from "@/lib/formularios";
 import { esquemaCalificacion, esquemaContacto, esquemaEstado, esquemaNota, esquemaReasignar } from "@/lib/leads/esquemas";
 import type { Database } from "@/lib/supabase/database.types";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { esquemaMensajeAsesor } from "@/lib/agente/configuracion";
+import { enviarYGuardar } from "@/lib/conversaciones/servicio";
+import { cargarCanal } from "@/lib/mensajeria/canal";
+import { dentroDeVentana } from "@/lib/mensajeria/tipos";
+import { crearClienteAdmin } from "@/lib/supabase/admin";
 
 // Todas usan el cliente con sesión: RLS decide si el usuario puede tocar el
 // lead (dueño: cualquiera de su inmobiliaria; asesor: sólo los suyos).
@@ -76,4 +81,70 @@ export async function agregarNota(leadId: string, _: EstadoFormulario, fd: FormD
   if (error) return { error: "No se pudo guardar la nota.", valores };
   revalidatePath(`/leads/${leadId}`);
   return { ok: "Nota agregada." };
+}
+
+// ---------------------------------------------------------------------------
+// Conversación de WhatsApp
+// ---------------------------------------------------------------------------
+
+async function conversacionDelLead(leadId: string) {
+  // Con el cliente de sesión: si el usuario no puede ver el lead, no la encuentra.
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase
+    .from("conversaciones")
+    .select("id, lead_id, ultimo_entrante_en, ia_activa, lead:leads(telefono)")
+    .eq("lead_id", leadId)
+    .maybeSingle();
+  return { supabase, conversacion: data };
+}
+
+export async function cambiarControlIA(leadId: string, iaActiva: boolean) {
+  await requerirUsuario();
+  const { supabase, conversacion } = await conversacionDelLead(leadId);
+  if (!conversacion) return;
+  await supabase.from("conversaciones").update({ ia_activa: iaActiva, requiere_atencion: false }).eq("id", conversacion.id);
+  revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/leads");
+}
+
+export async function marcarAtendido(leadId: string) {
+  await requerirUsuario();
+  const { supabase, conversacion } = await conversacionDelLead(leadId);
+  if (!conversacion) return;
+  await supabase.from("conversaciones").update({ requiere_atencion: false }).eq("id", conversacion.id);
+  revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/leads");
+}
+
+export async function enviarMensajeAsesor(leadId: string, _: EstadoFormulario, fd: FormData): Promise<EstadoFormulario> {
+  const usuario = await requerirUsuario();
+  const valores = objetoDeFormulario(fd);
+  const r = esquemaMensajeAsesor.safeParse(valores);
+  if (!r.success) return { errores: erroresPorCampo(r.error), valores };
+
+  const { supabase, conversacion } = await conversacionDelLead(leadId);
+  const telefono = conversacion?.lead?.telefono;
+  if (!conversacion || !telefono) return { error: "Este lead no tiene conversación de WhatsApp.", valores };
+  if (!dentroDeVentana(conversacion.ultimo_entrante_en)) {
+    return { error: "Pasaron más de 24 h desde su último mensaje: WhatsApp sólo permite plantillas aprobadas.", valores };
+  }
+
+  // Enviar requiere las credenciales del número (sólo servidor). El tenant sale de la sesión.
+  const admin = crearClienteAdmin();
+  const canal = await cargarCanal(admin, { inmobiliariaId: usuario.inmobiliariaId });
+  if (!canal) return { error: "WhatsApp no está conectado. Pídele al dueño que lo configure en Integraciones.", valores };
+
+  // Si el asesor escribe, la IA deja de contestar en esta conversación.
+  if (conversacion.ia_activa) await supabase.from("conversaciones").update({ ia_activa: false, requiere_atencion: false }).eq("id", conversacion.id);
+
+  const enviados = await enviarYGuardar(admin, canal, {
+    conversacionId: conversacion.id,
+    leadId,
+    telefono,
+    autor: "asesor",
+    asesorId: usuario.id,
+    envio: { tipo: "texto", texto: r.data.texto },
+  });
+  revalidatePath(`/leads/${leadId}`);
+  return enviados ? { ok: `Enviado ${new Date().toISOString()}` } : { error: "WhatsApp rechazó el mensaje. Revisa el detalle en la conversación.", valores };
 }
