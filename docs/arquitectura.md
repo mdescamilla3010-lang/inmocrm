@@ -1,4 +1,4 @@
-# Arquitectura — propuesta (pendiente de visto bueno)
+# Arquitectura
 
 ## 1. Estructura de carpetas
 
@@ -15,7 +15,7 @@ inmocrm/
 │   ├── tests/                    # pgTAP: aislamiento multi-tenant y roles
 │   └── seed.sql                  # 2 inmobiliarias demo, asesores, propiedades
 └── src/
-    ├── middleware.ts             # refresca sesión de Supabase y protege /panel
+    ├── proxy.ts                  # (antes middleware) refresca sesión y protege el panel
     ├── app/
     │   ├── (publico)/
     │   │   ├── login/
@@ -120,6 +120,29 @@ Validado con pruebas en un Postgres 16 local: aislamiento entre inmobiliarias, a
 6. **Cron**: `pg_cron` + `pg_net` llaman cada minuto a `/api/cron/seguimientos` con `CRON_SECRET` (se agrega en la fase 5).
 7. **Fotos**: bucket público (WhatsApp necesita URL accesible); escritura limitada a la carpeta del tenant.
 
-## 4. Preguntas abiertas
+## 4. Decisiones tomadas
 
-Ver la lista en el mensaje de propuesta; las respuestas se registrarán aquí.
+Aprobadas el 2026-11-06 ("usa lo que propusiste"). Las que aplican a fases
+futuras se pueden revisar al llegar a esa fase.
+
+| # | Tema | Decisión |
+|---|---|---|
+| 1 | Números de WhatsApp | Cada inmobiliaria conecta **su propio número** (WhatsApp Business Cloud). El webhook enruta por `phone_number_id`. |
+| 2 | Correos de portales | Cada inmobiliaria reenvía los correos de Inmuebles24, Lamudi y Vivanuncios a `<slug>@leads.<dominio>` (servicio de correo entrante con webhook). |
+| 3 | Alta de clientes | **Self-service**: el dueño se registra, crea su inmobiliaria y queda como dueño. Cobro/suscripción fuera del MVP. |
+| 4 | Operación | **Venta y renta** (el esquema soporta ambas). |
+| 5 | Asignación por zona | Si ningún asesor cubre la zona, o aún no se conoce, se usa **round robin como respaldo**. |
+| 6 | Pasar a humano | El asesor toma el control **desde la plataforma** (`conversaciones.ia_activa = false`). Criterios exactos de escalamiento: se definen en la fase 3. |
+| 7 | Catálogo | **Asesores y dueño** crean y editan propiedades; sólo el dueño borra. |
+| 8 | Calendario | **Cada asesor conecta su propio Google Calendar** (OAuth). |
+| 9 | Horario del agente | Pendiente: se define en la fase 3 (propuesta: 24/7, con citas sólo dentro de `horario_visitas`). |
+
+### Decisiones técnicas de la fase 1
+
+- **Next.js 16**: `middleware.ts` ahora se llama `src/proxy.ts`. Refresca la sesión de Supabase y redirige a `/login` si no hay sesión; la verificación de inmobiliaria y rol se hace en el servidor (`lib/auth/sesion.ts`), no en el proxy.
+- **`cacheComponents` desactivado**: todo el panel depende de la sesión y del tenant, no hay contenido estático que aprovechar; activarlo obligaría a envolver cada lectura de cookies en `<Suspense>`.
+- **Correos de Auth con `token_hash`** (`supabase/templates/`): los enlaces de confirmación, invitación y recuperación llegan a `/auth/confirmar`, que canjea el token en el servidor. En producción hay que copiar esas plantillas en Supabase → Auth → Email Templates.
+- **Invitaciones**: el dueño invita desde Equipo; se crea el usuario en Auth con la llave secreta y su fila en `usuarios` con la inmobiliaria del dueño (tomada de la sesión). Si falla el segundo paso, se borra el usuario de Auth.
+- **Siempre debe haber un dueño activo** por inmobiliaria (validado en la acción de Equipo).
+- **Usuarios desactivados** pueden leer su propia fila (migración 0005) para mostrarles "acceso desactivado" en lugar de mandarlos a crear otra inmobiliaria.
+- **Catálogo de propiedades**: el brief no lo ubica en ninguna fase, pero el agente (fase 3) lo necesita para recomendar. Se propone construirlo en la **fase 2**, junto con la bandeja de leads.

@@ -18,7 +18,7 @@ Guía para cualquier persona (o agente) que trabaje en este repo. El brief del p
 
 ## Stack y herramientas
 
-- Next.js (App Router) + TypeScript estricto (`strict: true`, sin `any` implícito) + Tailwind.
+- Next.js 16 (App Router) + TypeScript estricto + Tailwind 4. **Next 16 cambió APIs** (p. ej. `middleware.ts` → `src/proxy.ts`, `params`/`searchParams` son promesas, tipos globales `PageProps`/`LayoutProps`): antes de usar una API de Next, revisar `node_modules/next/dist/docs/` (ver `AGENTS.md`).
 - Gestor de paquetes: **pnpm**. Pruebas: **Vitest**. Validación de entradas: **Zod** (todo body de webhook, formulario o salida de herramienta del agente se valida con Zod).
 - Supabase (Postgres + Auth + Storage + `pg_cron`). Supabase CLI para desarrollo local (`supabase start`).
 - Claude vía `@anthropic-ai/sdk`. El modelo se configura con variable de entorno, nunca hardcodeado en la lógica.
@@ -65,15 +65,15 @@ Guía para cualquier persona (o agente) que trabaje en este repo. El brief del p
 - Aislamiento multi-tenant: pruebas de RLS con pgTAP en `supabase/tests/` (`supabase test db`).
 - Llamadas a Claude, WhatsApp y Google se mockean en pruebas unitarias.
 
-## Comandos (se habilitan en la fase 1)
+## Comandos
 
 ```bash
 pnpm dev          # Next.js en local
 pnpm test         # Vitest
 pnpm lint         # ESLint
-pnpm typecheck    # tsc --noEmit
+pnpm typecheck    # next typegen + tsc --noEmit
 supabase start    # Supabase local
 supabase db reset # reaplica migraciones + seed
 supabase test db  # pruebas pgTAP (RLS)
-pnpm db:types     # genera src/lib/supabase/database.types.ts
+pnpm db:types     # genera src/lib/supabase/database.types.ts (requiere supabase start)
 ```
