@@ -30,7 +30,7 @@ export default async function PaginaAgente() {
         <h2 className="text-base font-semibold">Horario de visitas</h2>
         <p className="mt-1 text-slate-600">
           El agente sólo propone visitas en este horario: <span className="font-medium text-slate-900">{describirHorario(inmo?.horario_visitas)}</span>.
-          Se podrá editar junto con la agenda (fase 4).
+          Se edita en Configuración → Agenda.
         </p>
       </div>
     </section>

@@ -24,6 +24,7 @@ export const PESTANAS_CONFIGURACION = [
   { href: "/configuracion/equipo", etiqueta: "Equipo" },
   { href: "/configuracion/asignacion", etiqueta: "Asignación" },
   { href: "/configuracion/agente", etiqueta: "Agente IA" },
+  { href: "/configuracion/agenda", etiqueta: "Agenda" },
   { href: "/configuracion/integraciones", etiqueta: "Integraciones" },
 ] as const;
 
