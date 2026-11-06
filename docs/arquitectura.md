@@ -85,8 +85,8 @@ Migraciones en `supabase/migrations/`:
 
 | Tabla | Para qué |
 |---|---|
-| `inmobiliarias` | tenant: slug, zona horaria, estrategia de asignación, puntero de round robin, nombre/instrucciones del agente, horario de visitas, duración de cita, clave de landing |
-| `usuarios` | 1:1 con `auth.users`; rol `dueno`/`asesor`, `recibe_leads`, calendario de Google |
+| `inmobiliarias` | tenant: slug, zona horaria, estrategia de asignación, nombre/instrucciones del agente, horario de visitas, duración de cita, clave de landing |
+| `usuarios` | 1:1 con `auth.users`; rol `dueno`/`asesor`, `recibe_leads`, `ultima_asignacion_en` (round robin), calendario de Google |
 | `zonas`, `asesor_zonas` | catálogo de zonas (con alias) y qué asesor atiende cada una |
 | `propiedades`, `propiedad_fotos` | catálogo; precio, ubicación, características, si acepta crédito/Infonavit/Fovissste |
 | `leads` | contacto, fuente, datos de calificación, score + motivo, estado, asesor, métricas |
@@ -94,7 +94,8 @@ Migraciones en `supabase/migrations/`:
 | `mensajes` | entrantes/salientes, autor (prospecto/agente/asesor/sistema), id del proveedor (idempotencia) |
 | `citas` | asesor, propiedad, horario, estado, `google_event_id`; **no permite empalmes** por asesor |
 | `seguimientos` | cola de recordatorios 24 h / 2 h y reactivaciones 3/7/15 d que procesa el cron |
-| `eventos_lead` | línea de tiempo y auditoría (asignaciones, cambios de score, recapturas, notas) |
+| `eventos_lead` | línea de tiempo y auditoría; la llena un **trigger** sobre `leads` (captura, asignación, estado, score, ediciones) más recapturas y notas |
+| `capturas_lead` | bitácora de cada intento de captura por canal: idempotencia (`leadgen_id`, `Message-ID`) y diagnóstico de correos no reconocidos |
 | `integraciones` | credenciales cifradas de WhatsApp, Meta y Google; enruta webhooks al tenant |
 
 ### Reglas de acceso (RLS)
@@ -145,4 +146,17 @@ futuras se pueden revisar al llegar a esa fase.
 - **Invitaciones**: el dueño invita desde Equipo; se crea el usuario en Auth con la llave secreta y su fila en `usuarios` con la inmobiliaria del dueño (tomada de la sesión). Si falla el segundo paso, se borra el usuario de Auth.
 - **Siempre debe haber un dueño activo** por inmobiliaria (validado en la acción de Equipo).
 - **Usuarios desactivados** pueden leer su propia fila (migración 0005) para mostrarles "acceso desactivado" en lugar de mandarlos a crear otra inmobiliaria.
-- **Catálogo de propiedades**: el brief no lo ubica en ninguna fase, pero el agente (fase 3) lo necesita para recomendar. Se propone construirlo en la **fase 2**, junto con la bandeja de leads.
+- **Catálogo de propiedades**: se construye en la fase 2 (aprobado), porque el agente de la fase 3 lo necesita para recomendar.
+
+### Decisiones técnicas de la fase 2
+
+- **Round robin = "el que lleva más tiempo sin recibir un lead"** (`usuarios.ultima_asignacion_en`). Un puntero único no sirve para la asignación por zona (los candidatos son un subconjunto y siempre ganaría el primero). La elección es atómica en `siguiente_asesor_round_robin()` (bloquea la fila de la inmobiliaria), sólo invocable por el servidor.
+- **Deduplicación**: primero por teléfono (único por inmobiliaria), luego por correo. Una recaptura sólo **completa** datos faltantes (nunca sobrescribe), queda en la línea de tiempo y **reabre** el lead si estaba perdido/descartado (salvo opt-out).
+- **Zona del lead**: la de la propiedad de interés si se conoce; si no, se busca en el texto (respuestas del formulario, mensaje) contra nombre y sinónimos de las zonas, sin acentos y por palabra completa.
+- **Liga con el catálogo**: los correos de portal y la landing traen una referencia; se liga si coincide con `propiedades.clave`. Hay que usar la misma clave en el portal y en InmoCRM.
+- **Correo entrante con Postmark Inbound** (adaptador en `lib/leads/correo/entrante.ts`; cambiar de proveedor es escribir otro adaptador). Webhook protegido con Basic auth. El parser es tolerante (etiquetas comunes + respaldo por expresiones regulares), pero **se probó sólo con correos sintéticos**: hay que validarlo con correos reales.
+- **Meta Lead Ads**: el token de cada página se guarda cifrado; el lead se pide a la Graph API con el token en el header. Webhook verificado con `X-Hub-Signature-256`, se responde 200 de inmediato y se procesa con `after()`.
+- **Landing**: endpoint público con CORS abierto, clave pública por inmobiliaria (regenerable), honeypot anti-spam. **Pendiente**: rate limiting (se recomienda en el CDN/WAF del despliegue).
+- **Fotos**: el navegador sube directo a Storage (sin pasar por el servidor ni por el límite de 1 MB de server actions); el servidor sólo registra rutas que estén dentro de la carpeta de esa propiedad.
+- **Línea de tiempo por trigger**: ningún flujo (pantalla, webhook o agente) tiene que acordarse de registrar eventos de estado, asignación o score.
+

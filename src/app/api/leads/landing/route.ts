@@ -34,8 +34,10 @@ export async function POST(request: NextRequest) {
 
   const r = esquemaLanding.safeParse(cuerpo);
   if (!r.success) {
-    const error = r.error.issues.find((i) => i.path[0] !== "clave")?.message ?? "Datos incompletos";
-    return json({ ok: false, error }, 422);
+    if (r.error.issues.some((i) => i.path[0] === "clave")) {
+      return json({ ok: false, error: "Falta la clave de la inmobiliaria o no es válida" }, 401);
+    }
+    return json({ ok: false, error: r.error.issues[0]?.message ?? "Datos incompletos" }, 422);
   }
   const envio = r.data;
 

@@ -75,6 +75,8 @@ Usuarios del seed (contraseña `inmocrm123`):
 
 Los correos (invitaciones, recuperación) se ven en Mailpit: http://127.0.0.1:54324
 
+Captura de leads (landing, Meta, correos de portales): ver [`docs/captura-de-leads.md`](docs/captura-de-leads.md).
+
 Verificación:
 
 ```bash

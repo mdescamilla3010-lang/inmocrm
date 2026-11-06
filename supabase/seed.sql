@@ -91,3 +91,39 @@ insert into public.propiedades (
    'Amueblado, listo para habitar.',
    'departamento', 'renta', 38000, 'bbbbbbbb-0000-0000-0000-0000000000e2', 'Polanco V Sección', 'Miguel Hidalgo', 'Ciudad de México',
    2, 2, 2, 120, null, false, false, false, '{"amueblado","gimnasio","seguridad 24/7"}', 'b0000000-0000-0000-0000-000000000002');
+
+-- -----------------------------------------------------------------------------
+-- Leads de ejemplo (el trigger registra "capturado" y "asignado" en la línea de tiempo)
+-- -----------------------------------------------------------------------------
+insert into public.leads (
+  inmobiliaria_id, nombre, telefono, email, fuente, fuente_detalle, mensaje_inicial, estado, asesor_id, asignado_en,
+  zona_interes, zona_id, presupuesto_min, presupuesto_max, forma_pago, urgencia, tipo_propiedad_interes, operacion_interes,
+  creado_en
+) values
+  ('aaaaaaaa-0000-0000-0000-000000000000', 'María Fernanda Ruiz', '+524421234567', 'mafer.ruiz@gmail.com', 'inmuebles24',
+   '{"referencia":"CB-001"}', 'Hola, ¿sigue disponible? ¿Aceptan crédito Infonavit?', 'nuevo',
+   'a0000000-0000-0000-0000-000000000002', now() - interval '20 minutes', 'Juriquilla', 'aaaaaaaa-0000-0000-0000-0000000000e1',
+   null, null, null, null, 'casa', 'venta', now() - interval '20 minutes'),
+  ('aaaaaaaa-0000-0000-0000-000000000000', 'Jorge Medina', '+525598765432', 'jorge.medina@outlook.com', 'meta_ads',
+   '{"form_id":"555","campaign_id":"preventa-zibata"}', 'presupuesto: 2.5 a 3 millones' || chr(10) || 'zona de interés: Zibatá', 'en_conversacion',
+   'a0000000-0000-0000-0000-000000000002', now() - interval '3 hours', 'Zibatá', 'aaaaaaaa-0000-0000-0000-0000000000e2',
+   2500000, 3000000, 'credito_bancario', 'uno_a_tres_meses', 'departamento', 'venta', now() - interval '3 hours'),
+  ('aaaaaaaa-0000-0000-0000-000000000000', 'Laura Gómez', '+524427654321', null, 'landing',
+   '{"utm_source":"facebook","utm_campaign":"infonavit"}', 'Busco casa con Infonavit por El Refugio', 'calificado',
+   'a0000000-0000-0000-0000-000000000003', now() - interval '1 day', 'El Refugio', 'aaaaaaaa-0000-0000-0000-0000000000e3',
+   1500000, 2000000, 'infonavit', 'menos_1_mes', 'casa', 'venta', now() - interval '1 day'),
+  ('aaaaaaaa-0000-0000-0000-000000000000', 'Pedro Salinas', '+524429990000', 'pedro@empresa.mx', 'lamudi',
+   '{}', '¿Tienen terrenos en Zibatá?', 'perdido',
+   'a0000000-0000-0000-0000-000000000002', now() - interval '12 days', 'Zibatá', 'aaaaaaaa-0000-0000-0000-0000000000e2',
+   null, 1500000, 'contado', 'mas_de_seis_meses', 'terreno', 'venta', now() - interval '12 days'),
+  ('aaaaaaaa-0000-0000-0000-000000000000', null, '+524421112233', null, 'vivanuncios',
+   '{}', 'Info del depa por favor', 'nuevo', null, null, null, null,
+   null, null, null, null, null, null, now() - interval '5 minutes'),
+  ('bbbbbbbb-0000-0000-0000-000000000000', 'Andrea Castillo', '+525511223344', 'andrea.c@gmail.com', 'meta_ads',
+   '{}', 'Me interesa rentar en Polanco', 'nuevo',
+   'b0000000-0000-0000-0000-000000000002', now() - interval '2 hours', 'Polanco', 'bbbbbbbb-0000-0000-0000-0000000000e2',
+   null, 40000, null, 'menos_1_mes', 'departamento', 'renta', now() - interval '2 hours');
+
+-- Los eventos del trigger usan now(); se alinean con la fecha de llegada del lead.
+update public.eventos_lead e set creado_en = l.creado_en
+from public.leads l where l.id = e.lead_id;
