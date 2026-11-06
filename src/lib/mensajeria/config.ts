@@ -11,6 +11,12 @@ export const esquemaConfigWhatsApp = z.object({
   texto_bienvenida: z.string().nullable().optional(),
   /** Plantilla para avisar al asesor ({{1}} prospecto, {{2}} motivo). */
   plantilla_aviso_asesor: z.string().nullable().optional(),
+  /** Recordatorio de visita: {{1}} nombre, {{2}} día y hora, {{3}} lugar. */
+  plantilla_recordatorio: z.string().nullable().optional(),
+  texto_recordatorio: z.string().nullable().optional(),
+  /** Reactivación de leads fríos: {{1}} nombre, {{2}} inmobiliaria. */
+  plantilla_reactivacion: z.string().nullable().optional(),
+  texto_reactivacion: z.string().nullable().optional(),
 });
 export type ConfigWhatsApp = z.infer<typeof esquemaConfigWhatsApp>;
 
@@ -35,6 +41,10 @@ export const esquemaFormWhatsApp = z.object({
   idioma: z.string().trim().regex(/^[a-z]{2}(_[A-Z]{2})?$/, { error: "Código de idioma como es_MX" }).default("es_MX"),
   textoBienvenida: textoOpcional(1024),
   plantillaAvisoAsesor: textoOpcional(120),
+  plantillaRecordatorio: textoOpcional(120),
+  textoRecordatorio: textoOpcional(1024),
+  plantillaReactivacion: textoOpcional(120),
+  textoReactivacion: textoOpcional(1024),
 });
 
 /** Rellena {{1}}, {{2}}… con los parámetros (para guardar lo que se envió). */

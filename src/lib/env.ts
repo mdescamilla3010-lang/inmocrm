@@ -32,6 +32,7 @@ const esquemaServidor = esquemaPublico.extend({
   AGENTE_ESPERA_MS: z.coerce.number().int().min(0).max(30_000).default(3000),
   GOOGLE_CLIENT_ID: opcional,
   GOOGLE_CLIENT_SECRET: opcional,
+  CRON_SECRET: opcional,
 });
 
 export type EnvPublico = z.infer<typeof esquemaPublico>;
@@ -84,6 +85,7 @@ export function envServidor(): EnvServidor {
     AGENTE_ESPERA_MS: process.env.AGENTE_ESPERA_MS || undefined,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    CRON_SECRET: process.env.CRON_SECRET,
   });
   if (!r.success) {
     throw new Error(`Variables de entorno inválidas (revisa .env.local): ${formatearError(r.error)}`);

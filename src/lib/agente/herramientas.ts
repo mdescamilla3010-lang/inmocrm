@@ -78,6 +78,9 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
       propiedad_id: anulable("string", { description: "id de la propiedad que va a ver, si ya eligió una" }),
     },
   ),
+  herramienta("confirmar_cita", "Marca como confirmada una visita agendada (p. ej. cuando responde que sí asistirá a un recordatorio).", {
+    cita_id: { type: "string", description: "cita_id que aparece en el estado del lead" },
+  }),
   herramienta("cancelar_cita", "Cancela una visita agendada (para reprogramar, cancela y luego ofrece horarios nuevos).", {
     cita_id: { type: "string", description: "cita_id que aparece en el estado del lead" },
     motivo: { type: "string", description: "Por qué la cancela, en pocas palabras" },
@@ -138,6 +141,7 @@ export const ESQUEMAS = {
     inicio: z.iso.datetime({ offset: true }),
     propiedad_id: z.uuid().nullable(),
   }),
+  confirmar_cita: z.object({ cita_id: z.uuid() }),
   cancelar_cita: z.object({ cita_id: z.uuid(), motivo: z.string().trim().min(1).max(300) }),
   registrar_interes_visita: z.object({ propiedad_id: z.uuid().nullable(), disponibilidad: z.string().trim().min(1).max(500) }),
   escalar_a_asesor: z.object({ motivo: z.enum(MOTIVOS_ESCALAMIENTO), resumen: z.string().trim().min(1).max(1000) }),

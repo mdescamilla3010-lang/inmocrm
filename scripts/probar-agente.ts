@@ -99,6 +99,8 @@ const ejecutar: EjecutorHerramienta = async (nombre, entrada) => {
       console.log(`\x1b[33m  📅 Cita agendada: ${describirHorarioCita(inicio, ZONA)}\x1b[0m`);
       return { contenido: JSON.stringify({ agendada: true, cita_id: id, cuando: `${describirHorarioCita(inicio, ZONA)} con Luis`, direccion: "Av. de las Ciencias 123, Juriquilla" }) };
     }
+    case "confirmar_cita":
+      return { contenido: lead.citas.some((c) => c.id === d.cita_id) ? "Visita confirmada." : "Esa cita no existe." };
     case "cancelar_cita":
       lead.citas = lead.citas.filter((c) => c.id !== d.cita_id);
       return { contenido: "Cita cancelada." };

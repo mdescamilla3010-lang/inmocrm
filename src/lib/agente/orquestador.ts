@@ -469,6 +469,20 @@ function crearEjecutor(ctx: Contexto): EjecutorHerramienta {
         };
       }
 
+      case "confirmar_cita": {
+        const d = ESQUEMAS.confirmar_cita.parse(entrada);
+        const { data: cita } = await ctx.admin
+          .from("citas")
+          .update({ estado: "confirmada" })
+          .eq("inmobiliaria_id", ctx.inmobiliariaId)
+          .eq("lead_id", ctx.lead.id)
+          .eq("id", d.cita_id)
+          .in("estado", ["programada", "confirmada"])
+          .select("id")
+          .maybeSingle();
+        return cita ? { contenido: "Visita confirmada." } : { contenido: "Esa cita no está activa para este prospecto.", esError: true };
+      }
+
       case "cancelar_cita": {
         const d = ESQUEMAS.cancelar_cita.parse(entrada);
         // Sólo citas de este lead.
