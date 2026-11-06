@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { esquemaFiltros, limpiarBusqueda } from "./filtros";
+import { limpiarBusqueda } from "@/lib/busqueda";
+import { esquemaFiltros } from "./filtros";
 
 describe("esquemaFiltros", () => {
   it("acepta filtros válidos", () => {

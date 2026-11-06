@@ -7,7 +7,8 @@ import { haceCuanto } from "@/lib/formato";
 import { ETIQUETA_ESTADO, ETIQUETA_FUENTE, ETIQUETA_SCORE, opciones } from "@/lib/leads/etiquetas";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { formatearTelefono } from "@/lib/telefono";
-import { esquemaFiltros, limpiarBusqueda, primerValor, type Filtros } from "./filtros";
+import { limpiarBusqueda, primerValor } from "@/lib/busqueda";
+import { esquemaFiltros, type Filtros } from "./filtros";
 
 export const metadata: Metadata = { title: "Leads" };
 
