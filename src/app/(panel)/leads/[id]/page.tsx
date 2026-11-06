@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AccionesCita } from "@/components/citas/acciones-cita";
+import { FormAgendar } from "@/components/citas/form-agendar";
 import { Conversacion } from "@/components/leads/conversacion";
 import { InsigniaEstado, InsigniaScore } from "@/components/leads/insignias";
+import { cambiarEstadoCita, cancelarCitaPanel } from "@/app/(panel)/citas/acciones";
 import { requerirUsuario } from "@/lib/auth/sesion";
+import { disponibilidadAsesor } from "@/lib/calendario/agenda";
+import { describirHorarioCita } from "@/lib/calendario/disponibilidad";
+import { fechaIso, partesLocales } from "@/lib/calendario/zona-horaria";
+import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { formatearFechaHora, formatearPesos, haceCuanto } from "@/lib/formato";
 import { ETIQUETA_FUENTE } from "@/lib/leads/etiquetas";
 import { describirEvento } from "@/lib/leads/eventos";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/database.types";
 import { formatearTelefono } from "@/lib/telefono";
 import {
+  agendarDesdePanel,
   agregarNota,
   cambiarControlIA,
   cambiarEstado,
@@ -57,6 +66,7 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
     : { data: [] };
   const nombres = Object.fromEntries((equipo ?? []).map((u) => [u.id, u.nombre]));
   const zh = usuario.inmobiliaria.zonaHoraria;
+  const visitas = await datosVisitas(lead.id, lead.asesor_id, usuario.inmobiliariaId, zh);
   const detalle = (lead.fuente_detalle ?? {}) as Record<string, unknown>;
   const urlAnuncio = typeof detalle.url_anuncio === "string" ? detalle.url_anuncio : null;
   const telefonoWa = lead.telefono?.replace("+", "");
@@ -140,6 +150,47 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
             />
           </Tarjeta>
 
+          <Tarjeta titulo="Visitas">
+            {visitas.citas.length ? (
+              <ul className="mb-5 divide-y divide-slate-100 rounded-lg border border-slate-200">
+                {visitas.citas.map((c) => (
+                  <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+                    <span>
+                      <span className="font-medium capitalize">{describirHorarioCita(new Date(c.inicio), zh)}</span>
+                      <span className="text-slate-600">
+                        {" "}
+                        · {ESTADO_CITA[c.estado]}
+                        {c.propiedad ? ` · ${c.propiedad.titulo}` : ""}
+                        {c.origen === "agente" ? " · agendó el agente" : ""}
+                      </span>
+                    </span>
+                    <AccionesCita
+                      estado={c.estado}
+                      yaPaso={new Date(c.inicio) < new Date()}
+                      confirmar={cambiarEstadoCita.bind(null, c.id, "confirmada")}
+                      realizada={cambiarEstadoCita.bind(null, c.id, "realizada")}
+                      noAsistio={cambiarEstadoCita.bind(null, c.id, "no_asistio")}
+                      cancelar={cancelarCitaPanel.bind(null, c.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {!lead.asesor_id ? (
+              <p className="text-sm text-amber-800">Asigna un asesor para poder agendar.</p>
+            ) : (
+              <>
+                {visitas.aviso ? <p className="mb-3 text-sm text-amber-800">{visitas.aviso}</p> : null}
+                <FormAgendar
+                  accion={agendarDesdePanel.bind(null, lead.id)}
+                  dias={visitas.dias}
+                  propiedades={visitas.propiedades}
+                  propiedadInicial={lead.propiedad_interes_id}
+                />
+              </>
+            )}
+          </Tarjeta>
+
           <Tarjeta titulo="Conversación de WhatsApp">
             <Conversacion
               conversacion={conversacion}
@@ -217,4 +268,56 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactN
       <dd className="mt-0.5 text-slate-900">{children}</dd>
     </div>
   );
+}
+
+const ESTADO_CITA: Record<Database["public"]["Enums"]["estado_cita"], string> = {
+  programada: "programada",
+  confirmada: "confirmada",
+  realizada: "realizada",
+  no_asistio: "no asistió",
+  cancelada: "cancelada",
+};
+
+/** Citas del lead (RLS) y horarios libres de su asesor para agendar desde aquí. */
+async function datosVisitas(leadId: string, asesorId: string | null, inmobiliariaId: string, zh: string) {
+  const supabase = await crearClienteServidor();
+  const [{ data: citas }, { data: propiedades }] = await Promise.all([
+    supabase
+      .from("citas")
+      .select("id, inicio, estado, origen, propiedad:propiedades(titulo)")
+      .eq("lead_id", leadId)
+      .order("inicio", { ascending: false })
+      .limit(20),
+    supabase.from("propiedades").select("id, titulo").eq("estado", "disponible").order("titulo").limit(300),
+  ]);
+
+  const dias: { dia: string; horarios: { valor: string; etiqueta: string }[] }[] = [];
+  let aviso: string | null = null;
+  if (asesorId) {
+    try {
+      // La disponibilidad del asesor incluye su Google Calendar (sólo con credenciales de servidor).
+      const disp = await disponibilidadAsesor(crearClienteAdmin(), inmobiliariaId, asesorId);
+      if (disp.fuente === "solo_citas") aviso = "El asesor no ha conectado su Google Calendar: sólo se evitan choques con visitas de InmoCRM.";
+      const porDia = new Map<string, { valor: string; etiqueta: string }[]>();
+      const fmtDia = new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: zh });
+      const fmtHora = new Intl.DateTimeFormat("es-MX", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: zh });
+      for (const l of disp.libres) {
+        const clave = fechaIso(partesLocales(zh, l.inicio));
+        const lista = porDia.get(clave) ?? [];
+        lista.push({ valor: l.inicio.toISOString(), etiqueta: fmtHora.format(l.inicio) });
+        if (!porDia.has(clave)) {
+          porDia.set(clave, lista);
+          dias.push({ dia: fmtDia.format(l.inicio), horarios: lista });
+        }
+      }
+    } catch {
+      aviso = "No se pudo leer el calendario del asesor (puede que deba reconectarlo en Mi perfil).";
+    }
+  }
+  return {
+    citas: citas ?? [],
+    dias,
+    aviso,
+    propiedades: (propiedades ?? []).map((p) => ({ valor: p.id, etiqueta: p.titulo })),
+  };
 }

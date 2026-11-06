@@ -8,6 +8,9 @@ import { esquemaCalificacion, esquemaContacto, esquemaEstado, esquemaNota, esque
 import type { Database } from "@/lib/supabase/database.types";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { esquemaMensajeAsesor } from "@/lib/agente/configuracion";
+import { agendarCita } from "@/lib/calendario/agenda";
+import { esquemaAgendarPanel } from "@/lib/calendario/configuracion";
+import { localAUtc } from "@/lib/calendario/zona-horaria";
 import { enviarYGuardar } from "@/lib/conversaciones/servicio";
 import { cargarCanal } from "@/lib/mensajeria/canal";
 import { dentroDeVentana } from "@/lib/mensajeria/tipos";
@@ -147,4 +150,75 @@ export async function enviarMensajeAsesor(leadId: string, _: EstadoFormulario, f
   });
   revalidatePath(`/leads/${leadId}`);
   return enviados ? { ok: `Enviado ${new Date().toISOString()}` } : { error: "WhatsApp rechazó el mensaje. Revisa el detalle en la conversación.", valores };
+}
+
+// ---------------------------------------------------------------------------
+// Agendar visita desde el panel
+// ---------------------------------------------------------------------------
+
+export async function agendarDesdePanel(leadId: string, _: EstadoFormulario, fd: FormData): Promise<EstadoFormulario> {
+  const usuario = await requerirUsuario();
+  const valores = objetoDeFormulario(fd);
+  const r = esquemaAgendarPanel.safeParse(valores);
+  if (!r.success) return { errores: erroresPorCampo(r.error), valores };
+
+  // RLS: sólo si el usuario puede ver este lead.
+  const supabase = await crearClienteServidor();
+  const { data: lead } = await supabase.from("leads").select("id, asesor_id, telefono").eq("id", leadId).maybeSingle();
+  if (!lead) return { error: "No tienes acceso a este lead.", valores };
+  if (!lead.asesor_id) return { error: "Asigna un asesor al lead antes de agendar.", valores };
+
+  const inicio = r.data.tipo === "manual" ? localAUtc(usuario.inmobiliaria.zonaHoraria, r.data.local) : r.data.inicio;
+  if (inicio.getTime() < Date.now()) return { error: "Ese horario ya pasó.", valores };
+
+  const admin = crearClienteAdmin();
+  let resultado;
+  try {
+    resultado = await agendarCita(admin, {
+      inmobiliariaId: usuario.inmobiliariaId,
+      leadId,
+      asesorId: lead.asesor_id,
+      inicio,
+      propiedadId: r.data.propiedadId,
+      origen: "asesor",
+      notas: r.data.notas,
+      // Un horario de la lista se revalida; uno manual sólo se cuida de empalmes (lo hace la base).
+      validarDisponibilidad: r.data.tipo === "libre",
+    });
+  } catch {
+    return { error: "No se pudo consultar el calendario del asesor. Intenta de nuevo.", valores };
+  }
+  if (!resultado.ok) return { error: resultado.mensaje, valores };
+
+  // Si la ventana de WhatsApp está abierta, se le confirma al prospecto.
+  let avisado = false;
+  const { data: conversacion } = await admin
+    .from("conversaciones")
+    .select("id, ultimo_entrante_en")
+    .eq("inmobiliaria_id", usuario.inmobiliariaId)
+    .eq("lead_id", leadId)
+    .maybeSingle();
+  if (lead.telefono && conversacion && dentroDeVentana(conversacion.ultimo_entrante_en)) {
+    const canal = await cargarCanal(admin, { inmobiliariaId: usuario.inmobiliariaId });
+    if (canal) {
+      avisado =
+        (await enviarYGuardar(admin, canal, {
+          conversacionId: conversacion.id,
+          leadId,
+          telefono: lead.telefono,
+          autor: "asesor",
+          asesorId: usuario.id,
+          envio: {
+            tipo: "texto",
+            texto: `¡Listo! Tu visita quedó agendada para el ${resultado.texto}.${resultado.direccion ? ` Dirección: ${resultado.direccion}.` : ""} Te escribimos antes para confirmar.`,
+          },
+        })) > 0;
+    }
+  }
+
+  revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/citas");
+  return {
+    ok: `Visita agendada: ${resultado.texto}.${resultado.enGoogle ? " Quedó en Google Calendar." : ""}${avisado ? " Se le avisó por WhatsApp." : ""}`,
+  };
 }
