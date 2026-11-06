@@ -46,9 +46,10 @@ export type Database = {
       capturas_lead: {
         Row: {
           actualizado_en: string;
+          canal: string;
           creado_en: string;
           detalle: string | null;
-          fuente: Database["public"]["Enums"]["fuente_lead"];
+          fuente: Database["public"]["Enums"]["fuente_lead"] | null;
           id: string;
           id_externo: string | null;
           inmobiliaria_id: string;
@@ -59,9 +60,10 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           actualizado_en?: string;
+          canal: string;
           creado_en?: string;
           detalle?: string | null;
-          fuente: Database["public"]["Enums"]["fuente_lead"];
+          fuente?: Database["public"]["Enums"]["fuente_lead"] | null;
           id?: string;
           id_externo?: string | null;
           inmobiliaria_id: string;
@@ -71,9 +73,10 @@ export type Database = {
         };
         Update: {
           actualizado_en?: string;
+          canal?: string;
           creado_en?: string;
           detalle?: string | null;
-          fuente?: Database["public"]["Enums"]["fuente_lead"];
+          fuente?: Database["public"]["Enums"]["fuente_lead"] | null;
           id?: string;
           id_externo?: string | null;
           inmobiliaria_id?: string;

@@ -16,7 +16,9 @@ create type public.resultado_captura as enum (
 create table public.capturas_lead (
   id               uuid primary key default gen_random_uuid(),
   inmobiliaria_id  uuid not null references public.inmobiliarias (id) on delete cascade,
-  fuente           public.fuente_lead not null,
+  canal            text not null check (canal in ('meta', 'landing', 'correo')),
+  -- null cuando no se pudo identificar (p. ej. un correo que no es de un portal)
+  fuente           public.fuente_lead,
   id_externo       text,
   resultado        public.resultado_captura not null default 'procesando',
   lead_id          uuid,
@@ -28,7 +30,7 @@ create table public.capturas_lead (
     references public.leads (inmobiliaria_id, id) on delete set null (lead_id)
 );
 create unique index capturas_lead_idempotencia
-  on public.capturas_lead (inmobiliaria_id, fuente, id_externo) where id_externo is not null;
+  on public.capturas_lead (inmobiliaria_id, canal, id_externo) where id_externo is not null;
 create index capturas_lead_recientes on public.capturas_lead (inmobiliaria_id, creado_en desc);
 create trigger set_actualizado_en before update on public.capturas_lead
   for each row execute function app.set_actualizado_en();

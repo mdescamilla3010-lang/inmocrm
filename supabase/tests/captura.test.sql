@@ -111,12 +111,12 @@ select is(
 -- -----------------------------------------------------------------------------
 -- Bitácora de capturas
 -- -----------------------------------------------------------------------------
-insert into capturas_lead (inmobiliaria_id, fuente, id_externo, resultado, detalle) values
-  ('eaaaaaaa-0000-0000-0000-000000000000', 'inmuebles24', '<msg-1@portal>', 'descartado', 'Formato no reconocido');
+insert into capturas_lead (inmobiliaria_id, canal, fuente, id_externo, resultado, detalle) values
+  ('eaaaaaaa-0000-0000-0000-000000000000', 'correo', null, '<msg-1@portal>', 'descartado', 'Formato no reconocido');
 
 select throws_ok(
-  $$insert into capturas_lead (inmobiliaria_id, fuente, id_externo)
-    values ('eaaaaaaa-0000-0000-0000-000000000000', 'inmuebles24', '<msg-1@portal>')$$,
+  $$insert into capturas_lead (inmobiliaria_id, canal, fuente, id_externo)
+    values ('eaaaaaaa-0000-0000-0000-000000000000', 'correo', 'inmuebles24', '<msg-1@portal>')$$,
   '23505', null, 'el mismo correo no se procesa dos veces');
 
 set local role authenticated;
