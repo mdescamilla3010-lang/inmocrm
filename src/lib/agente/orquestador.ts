@@ -1,6 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolverZona } from "@/lib/asignacion/zonas";
+import { agendarCita, cancelarCita, citasProximasDelLead, disponibilidadAsesor } from "@/lib/calendario/agenda";
+import { describirHorarioCita, elegirOpciones } from "@/lib/calendario/disponibilidad";
+import { asignarAsesorSiFalta } from "@/lib/leads/captura";
 import { cancelarSeguimientos, enviarYGuardar } from "@/lib/conversaciones/servicio";
 import { envPublico } from "@/lib/env";
 import { formatearPesos } from "@/lib/formato";
@@ -81,7 +84,17 @@ async function turno(admin: Admin, inmobiliariaId: string, conversacionId: strin
 
   const nombres = new Map((equipo ?? []).map((u) => [u.id, u.nombre]));
   const historialDb = (filas ?? []).reverse().map((f) => ({ ...f, nombreAsesor: f.asesor_id ? nombres.get(f.asesor_id) : null }));
-  const ctx: Contexto = { admin, canal, inmobiliariaId, conversacionId, lead, zonas: zonas ?? [], equipo: equipo ?? [], escalado: false };
+  const ctx: Contexto = {
+    admin,
+    canal,
+    inmobiliariaId,
+    conversacionId,
+    lead,
+    zonaHoraria: inmo.zona_horaria,
+    zonas: zonas ?? [],
+    equipo: equipo ?? [],
+    escalado: false,
+  };
 
   const estado = await estadoParaAgente(ctx, historialDb);
   const historial = construirHistorial(historialDb, describirEstadoLead(estado, horaLocal(inmo.zona_horaria)));
@@ -127,6 +140,7 @@ type Contexto = {
   lead: Lead;
   zonas: { id: string; nombre: string; alias: string[] }[];
   equipo: { id: string; nombre: string; telefono: string | null }[];
+  zonaHoraria: string;
   escalado: boolean;
 };
 
@@ -162,6 +176,7 @@ async function estadoParaAgente(ctx: Contexto, historial: Parameters<typeof mens
     urgencia: l.urgencia ? ETIQUETA_URGENCIA[l.urgencia] : null,
     recamarasMin: l.recamaras_min,
     interesVisita: l.interes_visita,
+    citas: await citasProximasDelLead(ctx.admin, ctx.inmobiliariaId, l.id, ctx.zonaHoraria),
     score: l.score ? ETIQUETA_SCORE[l.score] : null,
     faltantes: score.faltantes,
     asesor: ctx.equipo.find((u) => u.id === l.asesor_id)?.nombre ?? null,
@@ -180,7 +195,7 @@ function puntuar(l: Lead, coincidencias: number) {
     creditoPreaprobado: l.credito_preaprobado,
     urgencia: l.urgencia,
     coincidencias,
-    quiereVisitar: Boolean(l.interes_visita),
+    quiereVisitar: Boolean(l.interes_visita) || l.estado === "cita_agendada" || l.estado === "visita_realizada",
     respondio: true,
   });
 }
@@ -393,6 +408,80 @@ function crearEjecutor(ctx: Contexto): EjecutorHerramienta {
           });
         }
         return { contenido: `Se enviaron ${enviadas} de ${fotos.length} fotos de ${propiedad.titulo}.` };
+      }
+
+      case "ofrecer_horarios": {
+        const d = ESQUEMAS.ofrecer_horarios.parse(entrada);
+        const asesorId = await asignarAsesorSiFalta(ctx.admin, ctx.inmobiliariaId, ctx.lead.id);
+        if (!asesorId) return { contenido: "No hay asesores disponibles para agendar. Usa registrar_interes_visita.", esError: true };
+        let disp;
+        try {
+          disp = await disponibilidadAsesor(ctx.admin, ctx.inmobiliariaId, asesorId);
+        } catch (e) {
+          console.error("[agente] no se pudo leer la agenda", e);
+          return { contenido: "No pude consultar la agenda en este momento. Usa registrar_interes_visita.", esError: true };
+        }
+        const zh = disp.config.zonaHoraria;
+        const formatear = (o: { inicio: Date }) => ({ inicio: o.inicio.toISOString(), texto: describirHorarioCita(o.inicio, zh) });
+        const pedidas = elegirOpciones(disp.libres, { zonaHoraria: zh, fecha: d.fecha, franja: d.franja });
+        const alternativas = pedidas.length ? [] : elegirOpciones(disp.libres, { zonaHoraria: zh, max: 3 });
+        return {
+          contenido: JSON.stringify({
+            asesor: ctx.equipo.find((u) => u.id === asesorId)?.nombre ?? null,
+            duracion_min: disp.config.duracionMin,
+            opciones: pedidas.map(formatear),
+            ...(pedidas.length ? {} : { nota: "No hay horarios con esa fecha o franja; estas son las más próximas.", alternativas: alternativas.map(formatear) }),
+          }),
+        };
+      }
+
+      case "agendar_cita": {
+        const d = ESQUEMAS.agendar_cita.parse(entrada);
+        const asesorId = await asignarAsesorSiFalta(ctx.admin, ctx.inmobiliariaId, ctx.lead.id);
+        if (!asesorId) return { contenido: "No hay asesores disponibles para agendar.", esError: true };
+        let r;
+        try {
+          r = await agendarCita(ctx.admin, {
+            inmobiliariaId: ctx.inmobiliariaId,
+            leadId: ctx.lead.id,
+            asesorId,
+            inicio: new Date(d.inicio),
+            propiedadId: d.propiedad_id,
+            origen: "agente",
+            validarDisponibilidad: true,
+          });
+        } catch (e) {
+          console.error("[agente] error al agendar", e);
+          return { contenido: "No pude agendar en este momento. Usa registrar_interes_visita.", esError: true };
+        }
+        if (!r.ok) return { contenido: `${r.mensaje} Ofrécele otros horarios con ofrecer_horarios.`, esError: true };
+        const { data: lead } = await ctx.admin.from("leads").select("*").eq("inmobiliaria_id", ctx.inmobiliariaId).eq("id", ctx.lead.id).single();
+        if (lead) ctx.lead = lead;
+        await actualizarScore(ctx);
+        return {
+          contenido: JSON.stringify({
+            agendada: true,
+            cita_id: r.citaId,
+            cuando: r.texto,
+            direccion: r.direccion,
+            nota: r.direccion ? undefined : "No hay dirección registrada; dile que su asesor se la confirma.",
+          }),
+        };
+      }
+
+      case "cancelar_cita": {
+        const d = ESQUEMAS.cancelar_cita.parse(entrada);
+        // Sólo citas de este lead.
+        const { data: cita } = await ctx.admin
+          .from("citas")
+          .select("id")
+          .eq("inmobiliaria_id", ctx.inmobiliariaId)
+          .eq("lead_id", ctx.lead.id)
+          .eq("id", d.cita_id)
+          .maybeSingle();
+        if (!cita) return { contenido: "Esa cita no existe para este prospecto.", esError: true };
+        const cancelada = await cancelarCita(ctx.admin, { inmobiliariaId: ctx.inmobiliariaId, citaId: cita.id, motivo: d.motivo });
+        return { contenido: cancelada ? "Cita cancelada." : "Esa cita ya no estaba activa." };
       }
 
       case "registrar_interes_visita": {

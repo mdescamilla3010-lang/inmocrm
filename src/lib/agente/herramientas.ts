@@ -63,8 +63,28 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
     propiedad_id: { type: "string", description: "id devuelto por buscar_propiedades" },
   }),
   herramienta(
+    "ofrecer_horarios",
+    "Consulta la agenda real de su asesor y devuelve hasta 4 horarios libres para visitar (hora local). Usa null si no pidió fecha o franja.",
+    {
+      fecha: anulable("string", { description: "Día que pidió, formato AAAA-MM-DD" }),
+      franja: enumAnulable(["manana", "tarde", "cualquiera"], "manana = antes de las 13:00"),
+    },
+  ),
+  herramienta(
+    "agendar_cita",
+    "Agenda la visita en el horario que eligió el prospecto. `inicio` debe ser exactamente uno de los que devolvió ofrecer_horarios.",
+    {
+      inicio: { type: "string", description: "Valor `inicio` (ISO) de la opción elegida" },
+      propiedad_id: anulable("string", { description: "id de la propiedad que va a ver, si ya eligió una" }),
+    },
+  ),
+  herramienta("cancelar_cita", "Cancela una visita agendada (para reprogramar, cancela y luego ofrece horarios nuevos).", {
+    cita_id: { type: "string", description: "cita_id que aparece en el estado del lead" },
+    motivo: { type: "string", description: "Por qué la cancela, en pocas palabras" },
+  }),
+  herramienta(
     "registrar_interes_visita",
-    "Registra que el prospecto quiere visitar una propiedad y cuándo le acomoda. Su asesor confirmará el horario.",
+    "Úsala sólo si ninguno de los horarios ofrecidos le acomoda o no hay horarios: registra cuándo le gustaría visitar para que su asesor lo coordine.",
     {
       propiedad_id: anulable("string", { description: "id devuelto por buscar_propiedades, si ya eligió una" }),
       disponibilidad: { type: "string", description: "Días y horarios que propuso, tal como los dijo" },
@@ -107,6 +127,18 @@ export const ESQUEMAS = {
     forma_pago: z.enum(E.forma_pago).nullable(),
   }),
   enviar_fotos_propiedad: z.object({ propiedad_id: z.uuid() }),
+  ofrecer_horarios: z.object({
+    fecha: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable(),
+    franja: z.enum(["manana", "tarde", "cualquiera"]).nullable(),
+  }),
+  agendar_cita: z.object({
+    inicio: z.iso.datetime({ offset: true }),
+    propiedad_id: z.uuid().nullable(),
+  }),
+  cancelar_cita: z.object({ cita_id: z.uuid(), motivo: z.string().trim().min(1).max(300) }),
   registrar_interes_visita: z.object({ propiedad_id: z.uuid().nullable(), disponibilidad: z.string().trim().min(1).max(500) }),
   escalar_a_asesor: z.object({ motivo: z.enum(MOTIVOS_ESCALAMIENTO), resumen: z.string().trim().min(1).max(1000) }),
   registrar_baja: z.object({}),

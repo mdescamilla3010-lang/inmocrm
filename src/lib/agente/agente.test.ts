@@ -31,6 +31,8 @@ describe("construirPromptSistema", () => {
     const p = construirPromptSistema({ ...datos, instrucciones: null });
     for (const h of HERRAMIENTAS) expect(p).toContain(h.name);
     for (const criterio of ["hablar con una persona", "negociar precio", "queja", "dos intentos"]) expect(p).toContain(criterio);
+    // Nunca confirmar sin que la herramienta haya guardado la cita.
+    expect(p).toContain("Nunca confirmes una visita que agendar_cita no haya guardado");
     expect(p).not.toContain("# Indicaciones");
   });
 });
@@ -119,6 +121,7 @@ describe("describirEstadoLead", () => {
         urgencia: null,
         recamarasMin: null,
         interesVisita: null,
+        citas: ["sábado 14 de noviembre, 10:00 con Luis (cita_id c1)"],
         score: "tibio",
         faltantes: ["urgencia", "tipo de propiedad"],
         asesor: "Luis",
@@ -138,6 +141,7 @@ describe("describirEstadoLead", () => {
         "- Forma de pago: infonavit (preaprobado)",
         "- Score actual: tibio",
         "- Asesor asignado: Luis",
+        "Visitas agendadas: sábado 14 de noviembre, 10:00 con Luis (cita_id c1).",
         "Falta averiguar: urgencia, tipo de propiedad.",
         'Antes de que respondiera le enviamos: "Hola Ana, gracias por tu interés"',
       ].join("\n"),
@@ -148,7 +152,7 @@ describe("describirEstadoLead", () => {
     const vacio = {
       nombre: null, fuente: "WhatsApp", mensajeInicial: null, propiedadInteres: null, operacion: null, tipoPropiedad: null,
       zona: null, presupuestoMin: null, presupuestoMax: null, formaPago: null, creditoPreaprobado: null, urgencia: null,
-      recamarasMin: null, interesVisita: null, score: null, faltantes: [], asesor: null, previos: [],
+      recamarasMin: null, interesVisita: null, citas: [], score: null, faltantes: [], asesor: null, previos: [],
     };
     expect(describirEstadoLead(vacio, "x")).toContain("- Llegó por: WhatsApp");
   });

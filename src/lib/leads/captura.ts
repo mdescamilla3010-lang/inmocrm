@@ -239,6 +239,34 @@ async function elegirAsesor(
   return { asesorId: asesorId ?? null, motivo: asesorId ? motivo : "sin_asesores" };
 }
 
+/** Asigna asesor a un lead que no tiene (p. ej. si nadie recibía leads cuando llegó). */
+export async function asignarAsesorSiFalta(admin: Admin, inmobiliariaId: string, leadId: string): Promise<string | null> {
+  const { data: lead } = await admin
+    .from("leads")
+    .select("asesor_id, zona_id")
+    .eq("inmobiliaria_id", inmobiliariaId)
+    .eq("id", leadId)
+    .single();
+  if (!lead) return null;
+  if (lead.asesor_id) return lead.asesor_id;
+  const { asesorId, motivo } = await elegirAsesor(admin, inmobiliariaId, lead.zona_id);
+  if (!asesorId) return null;
+  await admin
+    .from("leads")
+    .update({ asesor_id: asesorId, asignado_en: new Date().toISOString() })
+    .eq("inmobiliaria_id", inmobiliariaId)
+    .eq("id", leadId)
+    .is("asesor_id", null);
+  await admin
+    .from("eventos_lead")
+    .update({ datos: { asesor_id: asesorId, motivo, descripcion: DESCRIPCION_MOTIVO[motivo] } })
+    .eq("inmobiliaria_id", inmobiliariaId)
+    .eq("lead_id", leadId)
+    .eq("tipo", "asignado")
+    .is("usuario_id", null);
+  return asesorId;
+}
+
 function escaparLike(texto: string) {
   return texto.replace(/[\\%_]/g, (c) => `\\${c}`);
 }

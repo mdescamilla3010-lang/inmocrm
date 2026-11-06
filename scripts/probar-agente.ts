@@ -18,6 +18,7 @@ import { ESQUEMAS, esHerramienta, HERRAMIENTAS } from "../src/lib/agente/herrami
 import { clienteModeloCon } from "../src/lib/agente/modelo-config";
 import { construirPromptSistema } from "../src/lib/agente/prompt";
 import { recomendarPropiedades, type PropiedadCatalogo } from "../src/lib/agente/recomendador";
+import { describirHorarioCita, elegirOpciones, esHorarioLibre, horariosLibres } from "../src/lib/calendario/disponibilidad";
 import { calcularScore } from "../src/lib/scoring/scoring";
 
 const zonas = [
@@ -35,8 +36,16 @@ const catalogo = [
   p({ id: "33333333-3333-4333-8333-333333333333", titulo: "Casa Infonavit en El Refugio", precio: 1_890_000, zonaId: "ref", zonaNombre: "Centro Sur", recamaras: 2, banos: 1.5, aceptaInfonavit: true, aceptaFovissste: true, m2Construccion: 90 }),
 ];
 
-type Lead = Record<string, unknown> & { faltantes: string[] };
-const lead: Lead = { nombre: null, faltantes: [] };
+type Lead = Record<string, unknown> & { faltantes: string[]; citas: { id: string; inicio: Date }[] };
+const lead: Lead = { nombre: null, faltantes: [], citas: [] };
+const ZONA = "America/Mexico_City";
+// Agenda simulada del asesor: horario típico sin compromisos previos, salvo sus citas.
+const libres = () =>
+  horariosLibres({
+    horario: { lun: ["09:00", "19:00"], mar: ["09:00", "19:00"], mie: ["09:00", "19:00"], jue: ["09:00", "19:00"], vie: ["09:00", "19:00"], sab: ["10:00", "14:00"], dom: null },
+    zonaHoraria: ZONA, duracionMin: 60, margenMin: 30, anticipacionMin: 120, dias: 14, ahora: new Date(),
+    ocupados: lead.citas.map((c) => ({ inicio: c.inicio, fin: new Date(c.inicio.getTime() + 3_600_000) })),
+  });
 const historial: { direccion: "entrante" | "saliente"; autor: "prospecto" | "agente"; contenido: string; tipo: string }[] = [];
 
 function puntuar() {
@@ -50,7 +59,7 @@ function puntuar() {
     presupuestoMin: criterios.presupuestoMin ?? null, presupuestoMax: criterios.presupuestoMax ?? null,
     formaPago: criterios.formaPago ?? null, creditoPreaprobado: (lead.credito_preaprobado as boolean | null) ?? null,
     urgencia: (lead.urgencia as never) ?? null, coincidencias: recomendarPropiedades(catalogo, criterios, 50).length,
-    quiereVisitar: Boolean(lead.interes_visita), respondio: true,
+    quiereVisitar: Boolean(lead.interes_visita) || lead.citas.length > 0, respondio: true,
   });
 }
 
@@ -78,6 +87,21 @@ const ejecutar: EjecutorHerramienta = async (nombre, entrada) => {
       });
       return { contenido: JSON.stringify(recs.map((r) => ({ id: r.propiedad.id, titulo: r.propiedad.titulo, precio: r.propiedad.precio, zona: r.propiedad.zonaNombre, recamaras: r.propiedad.recamaras, por_que: r.razones }))) };
     }
+    case "ofrecer_horarios": {
+      const opciones = elegirOpciones(libres(), { zonaHoraria: ZONA, fecha: d.fecha as string | null, franja: d.franja as never });
+      return { contenido: JSON.stringify({ asesor: "Luis", opciones: opciones.map((o) => ({ inicio: o.inicio.toISOString(), texto: describirHorarioCita(o.inicio, ZONA) })) }) };
+    }
+    case "agendar_cita": {
+      const inicio = new Date(String(d.inicio));
+      if (!esHorarioLibre(libres(), inicio)) return { contenido: "Ese horario ya no está disponible.", esError: true };
+      const id = crypto.randomUUID();
+      lead.citas.push({ id, inicio });
+      console.log(`\x1b[33m  📅 Cita agendada: ${describirHorarioCita(inicio, ZONA)}\x1b[0m`);
+      return { contenido: JSON.stringify({ agendada: true, cita_id: id, cuando: `${describirHorarioCita(inicio, ZONA)} con Luis`, direccion: "Av. de las Ciencias 123, Juriquilla" }) };
+    }
+    case "cancelar_cita":
+      lead.citas = lead.citas.filter((c) => c.id !== d.cita_id);
+      return { contenido: "Cita cancelada." };
     case "registrar_interes_visita":
       lead.interes_visita = d.disponibilidad;
       return { contenido: "Registrado. Dile que su asesor le confirma el horario en breve." };
@@ -118,6 +142,7 @@ async function main() {
         formaPago: (lead.forma_pago as string) ?? null, creditoPreaprobado: (lead.credito_preaprobado as boolean) ?? null,
         urgencia: (lead.urgencia as string) ?? null, recamarasMin: (lead.recamaras_min as number) ?? null,
         interesVisita: (lead.interes_visita as string) ?? null, score: (lead.score as string) ?? null, faltantes: lead.faltantes,
+        citas: lead.citas.map((c) => `${describirHorarioCita(c.inicio, ZONA)} con Luis (cita_id ${c.id})`),
         asesor: "Luis", previos: [],
       },
       new Intl.DateTimeFormat("es-MX", { dateStyle: "full", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date()),

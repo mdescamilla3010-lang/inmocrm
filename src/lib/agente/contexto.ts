@@ -56,6 +56,8 @@ export type EstadoLeadParaAgente = {
   urgencia: string | null;
   recamarasMin: number | null;
   interesVisita: string | null;
+  /** Visitas próximas ya agendadas, descritas en hora local. */
+  citas: string[];
   score: string | null;
   faltantes: string[];
   asesor: string | null;
@@ -91,6 +93,7 @@ export function describirEstadoLead(e: EstadoLeadParaAgente, horaLocal: string):
     `Hora local: ${horaLocal}.`,
     "Estado del lead (actualizado):",
     ...(datos.length ? datos : ["- Aún no sabemos nada de lo que busca."]),
+    ...(e.citas.length ? [`Visitas agendadas: ${e.citas.join("; ")}.`] : []),
     e.faltantes.length ? `Falta averiguar: ${e.faltantes.join(", ")}.` : "Ya tenemos los datos clave.",
     ...(e.previos.length ? [`Antes de que respondiera le enviamos: "${e.previos.join(" / ")}"`] : []),
   ].join("\n");
