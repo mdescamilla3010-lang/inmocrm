@@ -222,3 +222,18 @@ export async function agendarDesdePanel(leadId: string, _: EstadoFormulario, fd:
     ok: `Visita agendada: ${resultado.texto}.${resultado.enGoogle ? " Quedó en Google Calendar." : ""}${avisado ? " Se le avisó por WhatsApp." : ""}`,
   };
 }
+
+export async function cancelarSeguimiento(leadId: string, seguimientoId: string) {
+  const usuario = await requerirUsuario();
+  // RLS: sólo si el usuario puede ver los seguimientos de ese lead.
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase.from("seguimientos").select("id").eq("id", seguimientoId).eq("lead_id", leadId).eq("estado", "pendiente").maybeSingle();
+  if (!data) return;
+  // Los usuarios no escriben en la cola; se cancela con la llave de servidor.
+  await crearClienteAdmin()
+    .from("seguimientos")
+    .update({ estado: "cancelado", ultimo_error: `Cancelado por ${usuario.nombre}` })
+    .eq("inmobiliaria_id", usuario.inmobiliariaId)
+    .eq("id", data.id);
+  revalidatePath(`/leads/${leadId}`);
+}

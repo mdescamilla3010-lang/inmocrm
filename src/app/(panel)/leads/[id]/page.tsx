@@ -9,6 +9,8 @@ import { cambiarEstadoCita, cancelarCitaPanel } from "@/app/(panel)/citas/accion
 import { requerirUsuario } from "@/lib/auth/sesion";
 import { disponibilidadAsesor } from "@/lib/calendario/agenda";
 import { describirHorarioCita } from "@/lib/calendario/disponibilidad";
+import { ETIQUETA_SEGUIMIENTO } from "@/lib/seguimiento/reglas";
+import { BotonEnviar } from "@/components/ui/boton-enviar";
 import { fechaIso, partesLocales } from "@/lib/calendario/zona-horaria";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { formatearFechaHora, formatearPesos, haceCuanto } from "@/lib/formato";
@@ -20,6 +22,7 @@ import { formatearTelefono } from "@/lib/telefono";
 import {
   agendarDesdePanel,
   agregarNota,
+  cancelarSeguimiento,
   cambiarControlIA,
   cambiarEstado,
   enviarMensajeAsesor,
@@ -222,6 +225,31 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
             </div>
           </Tarjeta>
 
+          {visitas.seguimientos.length ? (
+            <Tarjeta titulo="Seguimientos automáticos">
+              <ul className="space-y-3 text-sm">
+                {visitas.seguimientos.map((sg) => (
+                  <li key={sg.id} className="flex items-start justify-between gap-2">
+                    <span>
+                      <span className="block font-medium">{ETIQUETA_SEGUIMIENTO[sg.tipo]}</span>
+                      <span className="block text-slate-500">
+                        {ESTADO_SEGUIMIENTO[sg.estado]} · {formatearFechaHora(sg.ejecutado_en ?? sg.programado_para, zh)}
+                      </span>
+                      {sg.ultimo_error && sg.estado !== "enviado" ? <span className="block text-xs text-slate-500">{sg.ultimo_error}</span> : null}
+                    </span>
+                    {sg.estado === "pendiente" ? (
+                      <form action={cancelarSeguimiento.bind(null, lead.id, sg.id)}>
+                        <BotonEnviar variante="secundario" textoEnviando="…" className="!px-2 !py-1 text-xs">
+                          Cancelar
+                        </BotonEnviar>
+                      </form>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </Tarjeta>
+          ) : null}
+
           <Tarjeta titulo="Contacto">
             <FormContacto
               accion={guardarContacto.bind(null, lead.id)}
@@ -270,6 +298,14 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactN
   );
 }
 
+const ESTADO_SEGUIMIENTO: Record<Database["public"]["Enums"]["estado_seguimiento"], string> = {
+  pendiente: "Programado",
+  procesando: "Enviándose",
+  enviado: "Enviado",
+  cancelado: "No se envió",
+  fallido: "Falló",
+};
+
 const ESTADO_CITA: Record<Database["public"]["Enums"]["estado_cita"], string> = {
   programada: "programada",
   confirmada: "confirmada",
@@ -281,7 +317,7 @@ const ESTADO_CITA: Record<Database["public"]["Enums"]["estado_cita"], string> = 
 /** Citas del lead (RLS) y horarios libres de su asesor para agendar desde aquí. */
 async function datosVisitas(leadId: string, asesorId: string | null, inmobiliariaId: string, zh: string) {
   const supabase = await crearClienteServidor();
-  const [{ data: citas }, { data: propiedades }] = await Promise.all([
+  const [{ data: citas }, { data: propiedades }, { data: seguimientos }] = await Promise.all([
     supabase
       .from("citas")
       .select("id, inicio, estado, origen, propiedad:propiedades(titulo)")
@@ -289,6 +325,12 @@ async function datosVisitas(leadId: string, asesorId: string | null, inmobiliari
       .order("inicio", { ascending: false })
       .limit(20),
     supabase.from("propiedades").select("id, titulo").eq("estado", "disponible").order("titulo").limit(300),
+    supabase
+      .from("seguimientos")
+      .select("id, tipo, estado, programado_para, ejecutado_en, ultimo_error")
+      .eq("lead_id", leadId)
+      .order("programado_para", { ascending: false })
+      .limit(12),
   ]);
 
   const dias: { dia: string; horarios: { valor: string; etiqueta: string }[] }[] = [];
@@ -316,6 +358,7 @@ async function datosVisitas(leadId: string, asesorId: string | null, inmobiliari
   }
   return {
     citas: citas ?? [],
+    seguimientos: seguimientos ?? [],
     dias,
     aviso,
     propiedades: (propiedades ?? []).map((p) => ({ valor: p.id, etiqueta: p.titulo })),

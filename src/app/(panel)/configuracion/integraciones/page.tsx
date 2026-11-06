@@ -65,6 +65,10 @@ export default async function PaginaIntegraciones() {
                   idioma: cfgWa.idioma ?? "es_MX",
                   textoBienvenida: cfgWa.texto_bienvenida ?? "",
                   plantillaAvisoAsesor: cfgWa.plantilla_aviso_asesor ?? "",
+                  plantillaRecordatorio: cfgWa.plantilla_recordatorio ?? "",
+                  textoRecordatorio: cfgWa.texto_recordatorio ?? "",
+                  plantillaReactivacion: cfgWa.plantilla_reactivacion ?? "",
+                  textoReactivacion: cfgWa.texto_reactivacion ?? "",
                 }
               : undefined
           }

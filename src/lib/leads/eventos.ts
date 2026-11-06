@@ -1,4 +1,5 @@
 import type { Database, Json } from "@/lib/supabase/database.types";
+import { ETIQUETA_SEGUIMIENTO } from "@/lib/seguimiento/reglas";
 import { ETIQUETA_ESTADO, ETIQUETA_FUENTE, ETIQUETA_SCORE } from "./etiquetas";
 
 type Evento = Pick<Database["public"]["Tables"]["eventos_lead"]["Row"], "tipo" | "datos" | "usuario_id">;
@@ -72,9 +73,17 @@ export function describirEvento(evento: Evento, nombres: Record<string, string>)
     case "nota":
       return dato(d, "texto") ?? "";
     case "cita_agendada":
-      return "Cita agendada";
-    case "cita_cancelada":
-      return "Cita cancelada";
+      return dato(d, "origen") === "agente" ? "El agente agendó una visita" : `Visita agendada${quien ? ` por ${quien}` : ""}`;
+    case "cita_cancelada": {
+      const motivo = dato(d, "motivo");
+      return `Visita cancelada${motivo ? ` · ${motivo}` : ""}`;
+    }
+    case "cita_realizada":
+      return `Visita realizada${quien ? ` (marcó ${quien})` : ""}`;
+    case "cita_no_asistio":
+      return "No asistió a la visita";
+    case "seguimiento_enviado":
+      return `Se envió: ${ETIQUETA_SEGUIMIENTO[dato(d, "tipo") as keyof typeof ETIQUETA_SEGUIMIENTO] ?? "seguimiento"}`;
     case "ia_pausada":
       return `${quien ?? "Un asesor"} tomó la conversación (IA en pausa)`;
     case "ia_reanudada":

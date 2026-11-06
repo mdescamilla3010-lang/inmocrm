@@ -11,7 +11,7 @@ export default async function PaginaAgente() {
   const supabase = await crearClienteServidor();
   const { data: inmo } = await supabase
     .from("inmobiliarias")
-    .select("agente_nombre, agente_instrucciones, horario_visitas")
+    .select("agente_nombre, agente_instrucciones, horario_visitas, recordatorios_activos, reactivacion_activa")
     .eq("id", dueno.inmobiliariaId)
     .single();
 
@@ -24,7 +24,14 @@ export default async function PaginaAgente() {
           urgencia; recomienda propiedades de tu catálogo y califica cada lead como caliente, tibio o frío. Pasa la
           conversación a un asesor cuando el prospecto lo pide, quiere negociar, tiene una queja o no logra entenderle.
         </p>
-        <FormularioAgente inicial={{ agenteNombre: inmo?.agente_nombre ?? "", agenteInstrucciones: inmo?.agente_instrucciones ?? "" }} />
+        <FormularioAgente
+          inicial={{
+            agenteNombre: inmo?.agente_nombre ?? "",
+            agenteInstrucciones: inmo?.agente_instrucciones ?? "",
+            recordatoriosActivos: inmo?.recordatorios_activos ?? true,
+            reactivacionActiva: inmo?.reactivacion_activa ?? true,
+          }}
+        />
       </div>
       <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm">
         <h2 className="text-base font-semibold">Horario de visitas</h2>

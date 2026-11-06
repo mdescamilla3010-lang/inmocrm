@@ -8,6 +8,8 @@ export const esquemaConfigAgente = z.object({
     .max(4000, { error: "Máximo 4,000 caracteres" })
     .optional()
     .transform((v) => v || null),
+  recordatoriosActivos: z.preprocess((v) => v === "on", z.boolean()),
+  reactivacionActiva: z.preprocess((v) => v === "on", z.boolean()),
 });
 
 export const esquemaMensajeAsesor = z.object({

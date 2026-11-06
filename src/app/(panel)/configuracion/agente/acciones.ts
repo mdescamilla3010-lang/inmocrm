@@ -16,7 +16,12 @@ export async function guardarAgente(_: EstadoFormulario, fd: FormData): Promise<
   const supabase = await crearClienteServidor();
   const { error } = await supabase
     .from("inmobiliarias")
-    .update({ agente_nombre: r.data.agenteNombre, agente_instrucciones: r.data.agenteInstrucciones })
+    .update({
+      agente_nombre: r.data.agenteNombre,
+      agente_instrucciones: r.data.agenteInstrucciones,
+      recordatorios_activos: r.data.recordatoriosActivos,
+      reactivacion_activa: r.data.reactivacionActiva,
+    })
     .eq("id", dueno.inmobiliariaId);
   if (error) return { error: "No se pudo guardar.", valores };
   revalidatePath("/configuracion/agente");

@@ -114,6 +114,10 @@ export async function conectarWhatsApp(_: EstadoFormulario, fd: FormData): Promi
       idioma: r.data.idioma,
       texto_bienvenida: r.data.textoBienvenida,
       plantilla_aviso_asesor: r.data.plantillaAvisoAsesor,
+      plantilla_recordatorio: r.data.plantillaRecordatorio,
+      texto_recordatorio: r.data.textoRecordatorio,
+      plantilla_reactivacion: r.data.plantillaReactivacion,
+      texto_reactivacion: r.data.textoReactivacion,
     },
     activa: true,
   };

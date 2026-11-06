@@ -105,6 +105,37 @@ export function FormWhatsApp({ accion, iniciales }: { accion: Accion; iniciales?
           ayuda="Avisa al asesor cuando un lead requiere atención. {{1}} = prospecto, {{2}} = motivo."
         />
       </fieldset>
+      <fieldset className="grid gap-3 sm:grid-cols-2">
+        <legend className="mb-1 text-sm font-semibold text-slate-900">Plantillas de seguimiento</legend>
+        <Campo
+          etiqueta="Recordatorio de visita"
+          name="plantillaRecordatorio"
+          defaultValue={v.plantillaRecordatorio}
+          error={e.plantillaRecordatorio}
+          ayuda="24 h y 2 h antes. {{1}} = nombre, {{2}} = día y hora, {{3}} = lugar."
+        />
+        <Campo
+          etiqueta="Texto del recordatorio"
+          name="textoRecordatorio"
+          defaultValue={v.textoRecordatorio}
+          error={e.textoRecordatorio}
+          placeholder="Hola {{1}}, te recordamos tu visita del {{2}} en {{3}}. ¿Nos confirmas?"
+        />
+        <Campo
+          etiqueta="Reactivación de leads fríos"
+          name="plantillaReactivacion"
+          defaultValue={v.plantillaReactivacion}
+          error={e.plantillaReactivacion}
+          ayuda="3, 7 y 15 días sin respuesta. {{1}} = nombre, {{2}} = inmobiliaria."
+        />
+        <Campo
+          etiqueta="Texto de la reactivación"
+          name="textoReactivacion"
+          defaultValue={v.textoReactivacion}
+          error={e.textoReactivacion}
+          placeholder="Hola {{1}}, ¿sigues buscando propiedad? En {{2}} tenemos opciones nuevas."
+        />
+      </fieldset>
       <BotonEnviar textoEnviando="Conectando…">Guardar conexión</BotonEnviar>
     </form>
   );

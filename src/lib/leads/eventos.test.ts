@@ -16,6 +16,10 @@ describe("describirEvento", () => {
     [ev("calificacion_editada", { campos: ["presupuesto_max", "forma_pago"] }, "u2"), "Luis actualizó presupuesto máximo, forma de pago"],
     [ev("nota", { texto: "Llamar el lunes" }, "u2"), "Llamar el lunes"],
     [ev("asignado", { asesor_id: "desconocido" }), "Asignado a otro asesor"],
+    [ev("cita_agendada", { origen: "agente" }), "El agente agendó una visita"],
+    [ev("cita_agendada", { origen: "asesor" }, "u2"), "Visita agendada por Luis"],
+    [ev("cita_cancelada", { motivo: "No puede ese día" }), "Visita cancelada · No puede ese día"],
+    [ev("seguimiento_enviado", { tipo: "recordatorio_24h", via: "plantilla" }), "Se envió: Recordatorio 24 h antes"],
   ])("%#", (evento, esperado) => {
     expect(describirEvento(evento, nombres)).toBe(esperado);
   });
