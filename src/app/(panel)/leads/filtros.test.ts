@@ -18,6 +18,7 @@ describe("esquemaFiltros", () => {
       fuente: undefined,
       score: undefined,
       q: undefined,
+      atencion: undefined,
       pagina: 1,
     });
   });

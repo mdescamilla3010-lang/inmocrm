@@ -26,10 +26,17 @@ export default async function PaginaLeads({ searchParams }: PageProps<"/leads">)
   // RLS ya limita al asesor a sus leads; aquí sólo se aplican filtros.
   let consulta = supabase
     .from("leads")
-    .select("id, nombre, telefono, email, fuente, estado, score, creado_en, asesor:usuarios(nombre)", { count: "exact" })
+    .select(
+      // !inner sólo cuando se filtra por atención: así no se ocultan leads sin conversación.
+      filtros.atencion
+        ? "id, nombre, telefono, email, fuente, estado, score, creado_en, asesor:usuarios(nombre), conversaciones!inner(requiere_atencion, ia_activa)"
+        : "id, nombre, telefono, email, fuente, estado, score, creado_en, asesor:usuarios(nombre), conversaciones(requiere_atencion, ia_activa)",
+      { count: "exact" },
+    )
     .order("creado_en", { ascending: false })
     .range(desde, desde + POR_PAGINA - 1);
 
+  if (filtros.atencion) consulta = consulta.eq("conversaciones.requiere_atencion", true);
   if (filtros.estado) consulta = consulta.eq("estado", filtros.estado);
   if (filtros.fuente) consulta = consulta.eq("fuente", filtros.fuente);
   if (filtros.score === "sin_score") consulta = consulta.is("score", null);
@@ -48,7 +55,7 @@ export default async function PaginaLeads({ searchParams }: PageProps<"/leads">)
 
   const total = count ?? 0;
   const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  const hayFiltros = Boolean(filtros.estado || filtros.fuente || filtros.score || filtros.asesor || q);
+  const hayFiltros = Boolean(filtros.estado || filtros.fuente || filtros.score || filtros.asesor || filtros.atencion || q);
 
   return (
     <section className="space-y-6">
@@ -88,7 +95,11 @@ export default async function PaginaLeads({ searchParams }: PageProps<"/leads">)
             opciones={[{ valor: "sin_asignar", etiqueta: "Sin asignar" }, ...(equipo ?? []).map((u) => ({ valor: u.id, etiqueta: u.nombre }))]}
           />
         ) : null}
-        <div className="flex gap-2 sm:col-span-2 lg:col-span-6">
+        <div className="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-6">
+          <label className="mr-2 inline-flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="atencion" value="1" defaultChecked={Boolean(filtros.atencion)} className="size-4 accent-emerald-700" />
+            Sólo los que requieren atención
+          </label>
           <button type="submit" className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">
             Filtrar
           </button>
@@ -121,6 +132,9 @@ export default async function PaginaLeads({ searchParams }: PageProps<"/leads">)
                       {l.nombre ?? "Sin nombre"}
                     </Link>
                     <p className="text-slate-500">{l.telefono ? formatearTelefono(l.telefono) : l.email}</p>
+                    {l.conversaciones.some((c) => c.requiere_atencion) ? (
+                      <span className="mt-1 inline-block rounded bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700">Requiere atención</span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 text-slate-700">{ETIQUETA_FUENTE[l.fuente]}</td>
                   <td className="px-4 py-3">

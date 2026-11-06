@@ -56,3 +56,56 @@ export function Copiable({ texto, multilinea = false }: { texto: string; multili
     </div>
   );
 }
+
+export function FormWhatsApp({ accion, iniciales }: { accion: Accion; iniciales?: Record<string, string> }) {
+  const [estado, enviar] = useActionState(accion, estadoInicial);
+  const v: Record<string, string | undefined> = { idioma: "es_MX", ...iniciales, ...estado.valores };
+  const e = estado.errores ?? {};
+  return (
+    <form action={enviar} className="space-y-4" noValidate>
+      {estado.error ? <Aviso tipo="error">{estado.error}</Aviso> : null}
+      {estado.ok ? <Aviso tipo="ok">{estado.ok}</Aviso> : null}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Campo etiqueta="Phone number ID" name="phoneNumberId" inputMode="numeric" defaultValue={v.phoneNumberId} error={e.phoneNumberId} />
+        <Campo etiqueta="Número de WhatsApp" name="numero" type="tel" placeholder="442 123 4567" defaultValue={v.numero} error={e.numero} />
+        <Campo etiqueta="WhatsApp Business Account ID (opcional)" name="wabaId" defaultValue={v.wabaId} error={e.wabaId} />
+        <Campo
+          etiqueta="Token de acceso permanente"
+          name="token"
+          type="password"
+          autoComplete="off"
+          error={e.token}
+          ayuda="De un usuario del sistema con whatsapp_business_messaging. Se guarda cifrado."
+        />
+      </div>
+      <fieldset className="grid gap-3 sm:grid-cols-2">
+        <legend className="mb-1 text-sm font-semibold text-slate-900">Plantillas aprobadas</legend>
+        <Campo
+          etiqueta="Plantilla de bienvenida"
+          name="plantillaBienvenida"
+          defaultValue={v.plantillaBienvenida}
+          error={e.plantillaBienvenida}
+          ayuda="Primer mensaje a leads de anuncios y portales. {{1}} = nombre, {{2}} = inmobiliaria."
+        />
+        <Campo etiqueta="Idioma" name="idioma" defaultValue={v.idioma} error={e.idioma} />
+        <Campo
+          etiqueta="Texto de la plantilla de bienvenida"
+          name="textoBienvenida"
+          defaultValue={v.textoBienvenida}
+          error={e.textoBienvenida}
+          className="sm:col-span-2"
+          ayuda="Cópialo tal cual de Meta; se usa para mostrar el mensaje en la conversación."
+          placeholder="Hola {{1}}, gracias por tu interés en {{2}}. ¿Te puedo hacer unas preguntas para recomendarte opciones?"
+        />
+        <Campo
+          etiqueta="Plantilla de aviso al asesor (opcional)"
+          name="plantillaAvisoAsesor"
+          defaultValue={v.plantillaAvisoAsesor}
+          error={e.plantillaAvisoAsesor}
+          ayuda="Avisa al asesor cuando un lead requiere atención. {{1}} = prospecto, {{2}} = motivo."
+        />
+      </fieldset>
+      <BotonEnviar textoEnviando="Conectando…">Guardar conexión</BotonEnviar>
+    </form>
+  );
+}

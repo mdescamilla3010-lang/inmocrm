@@ -9,8 +9,8 @@ import { ETIQUETA_FUENTE } from "@/lib/leads/etiquetas";
 import { codigoFormularioLanding } from "@/lib/leads/integraciones";
 import type { Database } from "@/lib/supabase/database.types";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { conectarPaginaMeta, desconectarIntegracion, regenerarClaveLanding } from "./acciones";
-import { Copiable, FormPaginaMeta } from "./formularios";
+import { conectarPaginaMeta, conectarWhatsApp, desconectarIntegracion, regenerarClaveLanding } from "./acciones";
+import { Copiable, FormPaginaMeta, FormWhatsApp } from "./formularios";
 
 export const metadata: Metadata = { title: "Integraciones" };
 
@@ -26,11 +26,13 @@ const CANAL: Record<string, string> = { meta: "Meta", landing: "Landing", correo
 export default async function PaginaIntegraciones() {
   const dueno = await requerirDueno();
   const supabase = await crearClienteServidor();
-  const [{ data: inmo }, { data: paginas }, { data: capturas }] = await Promise.all([
+  const [{ data: inmo }, { data: paginas }, { data: capturas }, { data: whatsapp }] = await Promise.all([
     supabase.from("inmobiliarias").select("clave_landing, slug").eq("id", dueno.inmobiliariaId).single(),
     supabase.from("integraciones").select("id, identificador_externo, config, activa, creado_en").eq("proveedor", "meta_leads").order("creado_en"),
     supabase.from("capturas_lead").select("id, canal, fuente, resultado, detalle, lead_id, payload, creado_en").order("creado_en", { ascending: false }).limit(30),
+    supabase.from("integraciones").select("id, identificador_externo, config").eq("proveedor", "whatsapp_cloud").maybeSingle(),
   ]);
+  const cfgWa = (whatsapp?.config ?? {}) as Record<string, string | null>;
 
   const appUrl = envPublico().NEXT_PUBLIC_APP_URL;
   const dominioCorreo = envServidor().CORREO_ENTRANTE_DOMINIO;
@@ -39,6 +41,40 @@ export default async function PaginaIntegraciones() {
 
   return (
     <section className="space-y-6">
+      <Tarjeta titulo="WhatsApp Business" descripcion="El número con el que el agente de IA atiende a tus prospectos.">
+        {whatsapp ? (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
+            <span>
+              Conectado: <span className="font-medium">{cfgWa.numero ?? whatsapp.identificador_externo}</span>
+              {cfgWa.plantilla_bienvenida ? ` · bienvenida "${cfgWa.plantilla_bienvenida}"` : " · sin plantilla de bienvenida"}
+            </span>
+            <form action={desconectarIntegracion.bind(null, whatsapp.id)}>
+              <BotonEnviar variante="secundario" textoEnviando="…">Desconectar</BotonEnviar>
+            </form>
+          </div>
+        ) : null}
+        <FormWhatsApp
+          accion={conectarWhatsApp}
+          iniciales={
+            whatsapp
+              ? {
+                  phoneNumberId: whatsapp.identificador_externo,
+                  numero: cfgWa.numero ?? "",
+                  wabaId: cfgWa.waba_id ?? "",
+                  plantillaBienvenida: cfgWa.plantilla_bienvenida ?? "",
+                  idioma: cfgWa.idioma ?? "es_MX",
+                  textoBienvenida: cfgWa.texto_bienvenida ?? "",
+                  plantillaAvisoAsesor: cfgWa.plantilla_aviso_asesor ?? "",
+                }
+              : undefined
+          }
+        />
+        <p className="mt-4 text-xs text-slate-500">
+          En tu app de Meta suscribe el webhook <code>{appUrl}/api/webhooks/whatsapp</code> al campo <code>messages</code>. Sin plantilla de
+          bienvenida, el agente sólo contesta a quien escriba primero.
+        </p>
+      </Tarjeta>
+
       <Tarjeta titulo="Formularios de tu landing" descripcion="Cualquier formulario web (o Zapier/Make) puede mandar leads con esta clave.">
         <dl className="space-y-3 text-sm">
           <div>

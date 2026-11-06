@@ -11,6 +11,7 @@ export const esquemaFiltros = z.object({
   score: opcional(z.enum([...E.score_lead, "sin_score"])),
   asesor: opcional(z.union([z.uuid(), z.literal("sin_asignar")])),
   q: opcional(z.string().trim().max(80)),
+  atencion: opcional(z.literal("1")),
   pagina: z.coerce.number().int().min(1).max(1000).catch(1),
 });
 
