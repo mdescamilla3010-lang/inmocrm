@@ -192,3 +192,10 @@ futuras se pueden revisar al llegar a esa fase.
 - **Cron**: `reclamar_seguimientos()` con `for update skip locked` (varias ejecuciones no toman la misma fila) y rescate de filas atoradas en "procesando". pg_cron + pg_net con URL y secreto en Vault; la migración lo omite donde no existen esas extensiones. Alternativa documentada: Vercel Cron.
 - **Reintentos**: 15 y 30 min; al tercer intento, "fallido" (visible en el lead).
 - **`confirmar_cita`**: el agente marca la visita como confirmada cuando el prospecto responde al recordatorio.
+
+### Decisiones técnicas de la fase 6
+
+- **Agregación en la base**: `reporte_dueno(desde, hasta)` devuelve todo el panel en un JSON (validado con Zod en la app). `security invoker` + verificación de rol: el dueño sólo ve su inmobiliaria.
+- **Definiciones explícitas** (ver `docs/reportes.md`): % a cita sobre leads del periodo; tiempo de respuesta sin leads manuales; visitas por fecha de la cita.
+- **Comparación** contra el periodo anterior de igual duración; "este mes" contra los mismos días del mes anterior. Proporciones en puntos, conteos en %. La variación lleva flecha y texto, no sólo color.
+- **Gráficas sin librería** (HTML/CSS, servidor): todas de una sola serie → un color, validado contra la superficie con el validador de la guía de visualización; barras ≤ 24 px, valor en la punta, tooltip por mouse y teclado, tablas con los mismos datos.

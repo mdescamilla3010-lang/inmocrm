@@ -83,6 +83,8 @@ Agenda y Google Calendar: ver [`docs/agenda-google-calendar.md`](docs/agenda-goo
 
 Recordatorios y reactivación (plantillas y cron): ver [`docs/seguimientos.md`](docs/seguimientos.md).
 
+Reportes del dueño (definiciones de cada indicador): ver [`docs/reportes.md`](docs/reportes.md).
+
 Verificación:
 
 ```bash
