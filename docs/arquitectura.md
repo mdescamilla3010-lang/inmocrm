@@ -133,10 +133,10 @@ futuras se pueden revisar al llegar a esa fase.
 | 3 | Alta de clientes | **Self-service**: el dueño se registra, crea su inmobiliaria y queda como dueño. Cobro/suscripción fuera del MVP. |
 | 4 | Operación | **Venta y renta** (el esquema soporta ambas). |
 | 5 | Asignación por zona | Si ningún asesor cubre la zona, o aún no se conoce, se usa **round robin como respaldo**. |
-| 6 | Pasar a humano | El asesor toma el control **desde la plataforma** (`conversaciones.ia_activa = false`). Criterios exactos de escalamiento: se definen en la fase 3. |
+| 6 | Pasar a humano | El asesor toma el control **desde la plataforma** (`conversaciones.ia_activa = false`). El agente escala cuando el prospecto pide una persona, quiere negociar, tiene una queja, no se le entiende tras 2 intentos o pregunta algo legal/fiscal/de crédito que no puede responder con certeza. |
 | 7 | Catálogo | **Asesores y dueño** crean y editan propiedades; sólo el dueño borra. |
 | 8 | Calendario | **Cada asesor conecta su propio Google Calendar** (OAuth). |
-| 9 | Horario del agente | Pendiente: se define en la fase 3 (propuesta: 24/7, con citas sólo dentro de `horario_visitas`). |
+| 9 | Horario del agente | **24/7**; las visitas sólo se proponen dentro de `horario_visitas`. |
 
 ### Decisiones técnicas de la fase 1
 
@@ -160,3 +160,15 @@ futuras se pueden revisar al llegar a esa fase.
 - **Fotos**: el navegador sube directo a Storage (sin pasar por el servidor ni por el límite de 1 MB de server actions); el servidor sólo registra rutas que estén dentro de la carpeta de esa propiedad.
 - **Línea de tiempo por trigger**: ningún flujo (pantalla, webhook o agente) tiene que acordarse de registrar eventos de estado, asignación o score.
 
+
+### Decisiones técnicas de la fase 3
+
+- **Modelo**: Claude Opus 5.5 (`claude-opus-5-5`) por defecto, configurable con `ANTHROPIC_MODEL` y `ANTHROPIC_EFFORT` (default `medium`). Thinking adaptativo (por defecto en este modelo). **Respaldo del lado del servidor** activado (`fallbacks: "default"`): si el modelo declina un mensaje por política, otro modelo contesta en la misma llamada.
+- **Caché de prompts**: herramientas + prompt de sistema son fijos por inmobiliaria (sin fechas ni datos del lead) y se cachean; el estado del lead y la hora local van en un **mensaje de sistema al final** de la conversación.
+- **Herramientas** (`strict: true` + validación Zod antes de ejecutar): `guardar_calificacion`, `buscar_propiedades`, `enviar_fotos_propiedad`, `registrar_interes_visita`, `escalar_a_asesor`, `registrar_baja`. El agente **no escribe en la base**: el orquestador valida y ejecuta.
+- **Scoring** determinista en `lib/scoring` (urgencia ≤30, forma de pago ≤25, presupuesto 10 + 5 si hay coincidencias, zona 5, tipo 5, quiere visitar 15; caliente ≥ 65, tibio ≥ 35; topes: sin respuesta = frío, más de 6 meses ≤ tibio). Se recalcula cada vez que el agente guarda datos; el motivo queda en `leads.score_motivo` y el cambio en la línea de tiempo.
+- **Concurrencia**: un solo proceso contesta cada conversación (`reclamar_turno_agente`, con caducidad). El webhook espera `AGENTE_ESPERA_MS` para juntar mensajes seguidos; al terminar, el agente revisa si llegó algo nuevo.
+- **Primer contacto**: leads nuevos de Meta, landing y portales reciben la **plantilla de bienvenida** (obligatoria fuera de la ventana de 24 h). Sin plantilla configurada, el agente sólo contesta a quien escriba primero. Los leads capturados a mano no reciben plantilla automática.
+- **Bajas**: "BAJA", "STOP", "no me escriban"… se detectan sin IA (`esSolicitudDeBaja`); se marca `opt_out`, se cancelan seguimientos y se confirma una sola vez. Si la persona vuelve a escribir por su cuenta, se retoma.
+- **Visitas (provisional hasta la fase 4)**: el agente registra la disponibilidad en `leads.interes_visita` y marca la conversación como "requiere atención" para que el asesor confirme. La fase 4 lo reemplaza por horarios reales de Google Calendar.
+- **Twilio**: `ProveedorTwilio` y su parser/firma están implementados y probados detrás de la misma interfaz; falta sólo la ruta del webhook de Twilio y su formulario de conexión cuando se decida usarlo.

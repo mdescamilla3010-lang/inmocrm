@@ -77,6 +77,8 @@ Los correos (invitaciones, recuperación) se ven en Mailpit: http://127.0.0.1:54
 
 Captura de leads (landing, Meta, correos de portales): ver [`docs/captura-de-leads.md`](docs/captura-de-leads.md).
 
+Agente de WhatsApp (configuración, plantillas y cómo probarlo en la terminal con `pnpm agente:probar`): ver [`docs/agente-whatsapp.md`](docs/agente-whatsapp.md).
+
 Verificación:
 
 ```bash
