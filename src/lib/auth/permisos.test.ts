@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { dejariaSinDueno, navegacionPara, puedeAdministrarEquipo, puedeVerReportes } from "./permisos";
 
 describe("navegacionPara", () => {
-  it("el dueño ve reportes y equipo", () => {
+  it("el dueño ve reportes y configuración", () => {
     const hrefs = navegacionPara("dueno").map((i) => i.href);
-    expect(hrefs).toEqual(["/leads", "/citas", "/propiedades", "/reportes", "/configuracion/equipo"]);
+    expect(hrefs).toEqual(["/leads", "/citas", "/propiedades", "/reportes", "/configuracion"]);
   });
 
-  it("el asesor no ve reportes ni equipo", () => {
+  it("el asesor no ve reportes ni configuración", () => {
     const hrefs = navegacionPara("asesor").map((i) => i.href);
     expect(hrefs).toEqual(["/leads", "/citas", "/propiedades"]);
   });

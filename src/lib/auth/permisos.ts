@@ -13,12 +13,18 @@ const NAVEGACION: readonly ItemNavegacion[] = [
   { href: "/citas", etiqueta: "Citas", roles: ["dueno", "asesor"] },
   { href: "/propiedades", etiqueta: "Propiedades", roles: ["dueno", "asesor"] },
   { href: "/reportes", etiqueta: "Reportes", roles: ["dueno"] },
-  { href: "/configuracion/equipo", etiqueta: "Equipo", roles: ["dueno"] },
+  { href: "/configuracion", etiqueta: "Configuración", roles: ["dueno"] },
 ];
 
 export function navegacionPara(rol: Rol): ItemNavegacion[] {
   return NAVEGACION.filter((i) => i.roles.includes(rol));
 }
+
+export const PESTANAS_CONFIGURACION = [
+  { href: "/configuracion/equipo", etiqueta: "Equipo" },
+  { href: "/configuracion/asignacion", etiqueta: "Asignación" },
+  { href: "/configuracion/integraciones", etiqueta: "Integraciones" },
+] as const;
 
 export function puedeAdministrarEquipo(rol: Rol): boolean {
   return rol === "dueno";
