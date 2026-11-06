@@ -964,6 +964,10 @@ export type Database = {
         Args: { p_conversacion_id: string; p_segundos: number };
         Returns: boolean;
       };
+      reporte_dueno: {
+        Args: { p_desde: string; p_hasta: string };
+        Returns: Json;
+      };
       siguiente_asesor_round_robin: {
         Args: { p_candidatos: string[]; p_inmobiliaria_id: string };
         Returns: string;
