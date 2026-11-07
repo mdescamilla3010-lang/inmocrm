@@ -14,9 +14,9 @@ function refrescar(leadId: string) {
   revalidatePath(`/leads/${leadId}`);
 }
 
-/** Confirmar / realizada / no asistió. RLS: dueño cualquiera, asesor las suyas. */
 const ESTADOS_DESDE_PANEL = new Set<EstadoCita>(["confirmada", "realizada", "no_asistio"]);
 
+/** Confirmar / realizada / no asistió. RLS: dueño cualquiera, asesor las suyas. */
 export async function cambiarEstadoCita(citaId: string, estado: Exclude<EstadoCita, "programada" | "cancelada">) {
   await requerirUsuario();
   // Los argumentos ligados con .bind llegan del navegador: se validan aquí.
