@@ -63,6 +63,7 @@ export async function borrarPropiedad(id: string) {
 /** Registra fotos que el navegador ya subió a Storage. */
 export async function registrarFotos(propiedadId: string, rutas: string[]): Promise<{ error?: string }> {
   const usuario = await requerirUsuario();
+  if (!Array.isArray(rutas) || rutas.some((r) => typeof r !== "string")) return { error: "Datos no válidos." };
   const supabase = await crearClienteServidor();
 
   const { data: propiedad } = await supabase.from("propiedades").select("id").eq("id", propiedadId).maybeSingle();

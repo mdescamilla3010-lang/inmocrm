@@ -15,8 +15,13 @@ function refrescar(leadId: string) {
 }
 
 /** Confirmar / realizada / no asistió. RLS: dueño cualquiera, asesor las suyas. */
+const ESTADOS_DESDE_PANEL = new Set<EstadoCita>(["confirmada", "realizada", "no_asistio"]);
+
 export async function cambiarEstadoCita(citaId: string, estado: Exclude<EstadoCita, "programada" | "cancelada">) {
   await requerirUsuario();
+  // Los argumentos ligados con .bind llegan del navegador: se validan aquí.
+  // (Cancelar va por cancelarCitaPanel para borrar también el evento de Google.)
+  if (!ESTADOS_DESDE_PANEL.has(estado)) return;
   const supabase = await crearClienteServidor();
   const { data: cita } = await supabase
     .from("citas")

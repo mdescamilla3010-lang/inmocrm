@@ -103,6 +103,7 @@ async function conversacionDelLead(leadId: string) {
 
 export async function cambiarControlIA(leadId: string, iaActiva: boolean) {
   await requerirUsuario();
+  if (typeof iaActiva !== "boolean") return;
   const { supabase, conversacion } = await conversacionDelLead(leadId);
   if (!conversacion) return;
   await supabase.from("conversaciones").update({ ia_activa: iaActiva, requiere_atencion: false }).eq("id", conversacion.id);
