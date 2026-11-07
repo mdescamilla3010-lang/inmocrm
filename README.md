@@ -85,6 +85,8 @@ Recordatorios y reactivación (plantillas y cron): ver [`docs/seguimientos.md`](
 
 Reportes del dueño (definiciones de cada indicador): ver [`docs/reportes.md`](docs/reportes.md).
 
+**Despliegue a producción**: [`docs/despliegue.md`](docs/despliegue.md). Revisión de seguridad: [`docs/revision-seguridad.md`](docs/revision-seguridad.md).
+
 Verificación:
 
 ```bash
