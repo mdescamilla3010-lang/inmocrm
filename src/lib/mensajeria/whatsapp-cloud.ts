@@ -115,10 +115,22 @@ function textoDe(m: Record<string, unknown>): { tipo: TipoMensaje; texto: string
       const l = obj("location");
       return { tipo: "ubicacion", texto: `[Compartió una ubicación${l.name ? `: ${l.name}` : ""}${l.address ? `, ${l.address}` : ""}]` };
     }
+    case "video":
+      return { tipo: "otro", texto: str(obj("video").caption) ?? "[Envió un video]" };
+    case "sticker":
+      return { tipo: "otro", texto: "[Envió un sticker]" };
+    case "contacts":
+      return { tipo: "otro", texto: "[Compartió un contacto]" };
     default:
-      return { tipo: "otro", texto: `[Mensaje de tipo ${String(m.type)}]` };
+      return { tipo: "otro", texto: "[Envió un mensaje que no se puede mostrar]" };
   }
 }
+
+/**
+ * Tipos que no son algo que contestar: reacciones (👍 sobre un mensaje),
+ * avisos del sistema y mensajes borrados. Se ignoran para no disparar al agente.
+ */
+const TIPOS_IGNORADOS = new Set(["reaction", "system", "unsupported", "request_welcome", "ephemeral"]);
 
 /** Convierte el webhook de la Cloud API en eventos agrupados por número del negocio. */
 export function parsearWebhookWhatsApp(cuerpo: unknown): EventoMensajeria[] {
@@ -136,6 +148,7 @@ export function parsearWebhookWhatsApp(cuerpo: unknown): EventoMensajeria[] {
       const nombres = new Map((v.contacts ?? []).map((c) => [c.wa_id, c.profile?.name ?? null]));
 
       for (const m of v.messages ?? []) {
+        if (TIPOS_IGNORADOS.has(String(m.type))) continue;
         const telefono = normalizarTelefono(`+${String(m.from ?? "")}`);
         if (!telefono || typeof m.id !== "string") continue;
         const { tipo, texto } = textoDe(m);

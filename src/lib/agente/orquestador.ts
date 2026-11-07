@@ -33,6 +33,8 @@ type Lead = Database["public"]["Tables"]["leads"]["Row"];
 
 const SEGUNDOS_TURNO = 120;
 const MAX_RONDAS = 3;
+/** Más mensajes del prospecto que esto en una hora: se pausa la IA (protege contra abuso y costos). */
+const MAX_ENTRANTES_POR_HORA = 40;
 const RESPUESTA_DE_RESPALDO = "¡Gracias por escribirnos! En un momento uno de nuestros asesores te contesta por aquí.";
 
 /**
@@ -95,6 +97,18 @@ async function turno(admin: Admin, inmobiliariaId: string, conversacionId: strin
     equipo: equipo ?? [],
     escalado: false,
   };
+
+  const { count: recientes } = await admin
+    .from("mensajes")
+    .select("id", { count: "exact", head: true })
+    .eq("inmobiliaria_id", inmobiliariaId)
+    .eq("conversacion_id", conversacionId)
+    .eq("direccion", "entrante")
+    .gte("creado_en", new Date(Date.now() - 3_600_000).toISOString());
+  if ((recientes ?? 0) > MAX_ENTRANTES_POR_HORA) {
+    await escalar(ctx, "otro", `Más de ${MAX_ENTRANTES_POR_HORA} mensajes en una hora: se pausó la IA. Revisa si es un prospecto real.`);
+    return "omitido";
+  }
 
   const estado = await estadoParaAgente(ctx, historialDb);
   const historial = construirHistorial(historialDb, describirEstadoLead(estado, horaLocal(inmo.zona_horaria)));

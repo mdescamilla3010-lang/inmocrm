@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { codigoFormularioLanding, esquemaPaginaMeta } from "./integraciones";
-import { esquemaLanding } from "./landing";
+import { destinoGracias, esquemaLanding } from "./landing";
 import { camposParaCompletar } from "./recaptura";
 
 const clave = "0123456789abcdef0123456789abcdef";
@@ -76,5 +76,21 @@ describe("integraciones", () => {
     expect(esquemaPaginaMeta.safeParse({ pageId: "1234567890", token: "x".repeat(30) }).success).toBe(true);
     expect(esquemaPaginaMeta.safeParse({ pageId: "mi-pagina", token: "x".repeat(30) }).success).toBe(false);
     expect(esquemaPaginaMeta.safeParse({ pageId: "1234567890", token: "corto" }).success).toBe(false);
+  });
+});
+
+describe("destinoGracias", () => {
+  it("permite regresar al mismo sitio que envió el formulario", () => {
+    expect(destinoGracias("https://casas.mx/gracias", "https://casas.mx", null)).toBe("https://casas.mx/gracias");
+    expect(destinoGracias("https://casas.mx/gracias?x=1", null, "https://casas.mx/landing")).toBe("https://casas.mx/gracias?x=1");
+  });
+  it.each([
+    ["https://evil.com/robar", "https://casas.mx", null],
+    ["https://casas.mx.evil.com/", "https://casas.mx", null],
+    ["https://casas.mx/gracias", null, null],
+    ["javascript:alert(1)", "https://casas.mx", null],
+    ["/gracias", "https://casas.mx", null],
+  ])("rechaza %s desde %s", (gracias, origen, referer) => {
+    expect(destinoGracias(gracias, origen, referer)).toBeNull();
   });
 });

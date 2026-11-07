@@ -1,6 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { enviarPrimerContacto } from "@/lib/conversaciones/servicio";
-import { esquemaLanding } from "@/lib/leads/landing";
+import { destinoGracias, esquemaLanding, LIMITE_LANDING_POR_MINUTO } from "@/lib/leads/landing";
 import { abrirCaptura, capturarLead, cerrarCaptura } from "@/lib/leads/captura";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 
@@ -47,7 +47,17 @@ export async function POST(request: NextRequest) {
   if (!inmo) return json({ ok: false, error: "Clave de inmobiliaria no válida" }, 404);
 
   // Al bot se le responde como si todo hubiera salido bien.
-  if (envio.esSpam) return respuestaExito(cuerpo, esFormulario);
+  if (envio.esSpam) return respuestaExito(request, cuerpo, esFormulario);
+
+  const { count: recientes } = await admin
+    .from("capturas_lead")
+    .select("id", { count: "exact", head: true })
+    .eq("inmobiliaria_id", inmo.id)
+    .eq("canal", "landing")
+    .gte("creado_en", new Date(Date.now() - 60_000).toISOString());
+  if ((recientes ?? 0) >= LIMITE_LANDING_POR_MINUTO) {
+    return json({ ok: false, error: "Demasiados envíos. Intenta de nuevo en un minuto." }, 429);
+  }
 
   const capturaId = await abrirCaptura(admin, {
     inmobiliariaId: inmo.id,
@@ -86,18 +96,18 @@ export async function POST(request: NextRequest) {
     console.error("[landing] error al capturar lead", e);
     return json({ ok: false, error: "No pudimos registrar tus datos. Intenta de nuevo." }, 500);
   }
-  return respuestaExito(cuerpo, esFormulario);
+  return respuestaExito(request, cuerpo, esFormulario);
 }
 
 function json(cuerpo: unknown, status = 200) {
   return NextResponse.json(cuerpo, { status, headers: CORS });
 }
 
-/** Un <form> HTML sin JavaScript puede mandar `gracias` para regresar a su página. */
-function respuestaExito(cuerpo: Record<string, unknown>, esFormulario: boolean) {
-  const gracias = typeof cuerpo.gracias === "string" ? cuerpo.gracias : null;
-  if (esFormulario && gracias && /^https?:\/\//i.test(gracias)) {
-    return NextResponse.redirect(gracias, { status: 303, headers: CORS });
+/** Un <form> HTML sin JavaScript puede mandar `gracias` para regresar a su página (del mismo sitio). */
+function respuestaExito(request: NextRequest, cuerpo: Record<string, unknown>, esFormulario: boolean) {
+  const destino = esFormulario ? destinoGracias(cuerpo.gracias, request.headers.get("origin"), request.headers.get("referer")) : null;
+  if (destino) {
+    return NextResponse.redirect(destino, { status: 303, headers: CORS });
   }
   return json({ ok: true, mensaje: "¡Gracias! En un momento te contactamos por WhatsApp." });
 }

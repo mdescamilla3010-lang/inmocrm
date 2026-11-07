@@ -81,6 +81,27 @@ describe("parsearWebhookWhatsApp", () => {
     ]);
   });
 
+  it("ignora reacciones y avisos del sistema; describe video y stickers", () => {
+    const conTipos = (mensajes: object[]) =>
+      parsearWebhookWhatsApp({
+        object: "whatsapp_business_account",
+        entry: [{ changes: [{ field: "messages", value: { metadata: { phone_number_id: "1099" }, messages: mensajes } }] }],
+      })[0].mensajes.map((m) => [m.tipo, m.texto]);
+    expect(
+      conTipos([
+        { from: "5214421234567", id: "r1", timestamp: "1", type: "reaction", reaction: { message_id: "x", emoji: "👍" } },
+        { from: "5214421234567", id: "s1", timestamp: "1", type: "system", system: { body: "cambió de número" } },
+        { from: "5214421234567", id: "v1", timestamp: "1", type: "video", video: { id: "m" } },
+        { from: "5214421234567", id: "k1", timestamp: "1", type: "sticker", sticker: { id: "m" } },
+        { from: "5214421234567", id: "u1", timestamp: "1", type: "order" },
+      ]),
+    ).toEqual([
+      ["otro", "[Envió un video]"],
+      ["otro", "[Envió un sticker]"],
+      ["otro", "[Envió un mensaje que no se puede mostrar]"],
+    ]);
+  });
+
   it("ignora payloads ajenos", () => {
     expect(parsearWebhookWhatsApp({ object: "page", entry: [] })).toEqual([]);
     expect(parsearWebhookWhatsApp(null)).toEqual([]);

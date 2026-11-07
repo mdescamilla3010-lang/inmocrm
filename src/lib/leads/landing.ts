@@ -60,3 +60,28 @@ export const esquemaLanding = z
   });
 
 export type EnvioLanding = z.output<typeof esquemaLanding>;
+
+/**
+ * Página de "gracias" a la que regresa un <form> HTML: sólo si es del mismo
+ * sitio que envió el formulario (cabecera Origin o Referer). Así nuestro
+ * dominio no sirve para redirigir a sitios ajenos.
+ */
+export function destinoGracias(gracias: unknown, origen: string | null, referer: string | null): string | null {
+  if (typeof gracias !== "string" || !/^https?:\/\//i.test(gracias)) return null;
+  let destino: URL;
+  try {
+    destino = new URL(gracias);
+  } catch {
+    return null;
+  }
+  const remitente = origen && origen !== "null" ? origen : referer;
+  if (!remitente) return null;
+  try {
+    return new URL(remitente).origin === destino.origin ? destino.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Envíos de landing aceptados por inmobiliaria por minuto (frena bots y abusos). */
+export const LIMITE_LANDING_POR_MINUTO = 30;
