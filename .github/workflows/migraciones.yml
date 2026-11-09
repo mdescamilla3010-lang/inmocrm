@@ -1,0 +1,60 @@
+name: Migraciones a producción
+
+# Botón manual (Actions → "Migraciones a producción" → Run workflow) para
+# aplicar supabase/migrations al proyecto de Supabase de producción sin usar la
+# terminal. Nunca carga seed.sql (usuarios de prueba). Pasos en docs/despliegue.md.
+#
+# Secreto requerido (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL  cadena "Session pooler" de Supabase (botón Connect), con la
+#                    contraseña de la base en lugar de [YOUR-PASSWORD]. Se usa el
+#                    pooler porque los runners de GitHub no tienen IPv6 y la
+#                    conexión directa de Supabase sólo es IPv6.
+
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "simular: sólo muestra qué se aplicaría. aplicar: cambia la base."
+        type: choice
+        options:
+          - simular
+          - aplicar
+        default: simular
+
+concurrency:
+  group: migraciones-produccion
+  cancel-in-progress: false
+
+jobs:
+  migrar:
+    name: Migraciones (${{ inputs.modo }})
+    # Sólo desde main: lo que se aplica es lo que ya pasó la CI.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: produccion
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Revisar secreto
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Falta el secreto SUPABASE_DB_URL (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+          case "$SUPABASE_DB_URL" in
+            *YOUR-PASSWORD*) echo "::error::SUPABASE_DB_URL todavía trae [YOUR-PASSWORD]: reemplázalo por la contraseña de la base"; exit 1 ;;
+            *pooler.supabase.com*) ;;
+            *) echo "::error::Usa la cadena de 'Session pooler' (host *.pooler.supabase.com), no la conexión directa"; exit 1 ;;
+          esac
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migraciones pendientes (simulación)
+        run: pnpm exec supabase db push --dry-run --skip-vault --yes --remote="$SUPABASE_DB_URL"
+      - name: Aplicar migraciones
+        if: inputs.modo == 'aplicar'
+        run: pnpm exec supabase db push --skip-vault --yes --remote="$SUPABASE_DB_URL"
