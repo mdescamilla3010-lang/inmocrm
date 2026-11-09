@@ -15,7 +15,22 @@ pg_cron) + servicios externos (Anthropic, Meta/WhatsApp, Google, Postmark).
 ## 1. Supabase
 
 1. Crear el proyecto (región elegida). Guardar la contraseña de la base.
-2. Desde tu máquina:
+2. Aplicar las migraciones. **Opción A, sin terminal (botón en GitHub):**
+   1. Supabase → botón **Connect** (arriba) → pestaña *Connection String* →
+      **Session pooler** → copiar la URI y cambiar `[YOUR-PASSWORD]` por la
+      contraseña de la base. Si la contraseña tiene símbolos (`@ : / ? # %`),
+      genera una nueva sólo con letras y números en *Database → Settings*.
+   2. GitHub → **Settings → Secrets and variables → Actions → New repository
+      secret**: nombre `SUPABASE_DB_URL`, valor la URI anterior.
+   3. GitHub → **Actions → Migraciones a producción → Run workflow** (rama
+      `main`): primero con `simular` (lista las migraciones pendientes), luego
+      con `aplicar`.
+
+   Se usa el *Session pooler* porque los servidores de GitHub no tienen IPv6 y
+   la conexión directa de Supabase sólo es IPv6. Repite el botón cada vez que
+   se haga merge de una migración nueva a `main`.
+
+   **Opción B, desde tu máquina:**
    ```bash
    pnpm exec supabase login
    pnpm exec supabase link --project-ref <ref-del-proyecto>
