@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Tokens de visualización (docs: guía de dataviz). Una sola serie → azul slot 1. */
+:root {
+  --viz-serie: #2a78d6;
+  --viz-serie-hover: #256abf;
+  --viz-grid: #e7e6e2;
+  --viz-bueno-texto: #006300;
+  --viz-malo-texto: #b42318;
+}

@@ -53,3 +53,43 @@ Una fase a la vez; al terminar cada una se documenta qué se hizo y cómo probar
 6. Panel del dueño
 
 Arquitectura y decisiones técnicas: [`docs/arquitectura.md`](docs/arquitectura.md). Convenciones del proyecto: [`CLAUDE.md`](CLAUDE.md).
+
+## Desarrollo local
+
+Requisitos: Node 22+, pnpm, Docker (para Supabase local).
+
+```bash
+pnpm install
+pnpm exec supabase start       # levanta Postgres, Auth, Storage y Mailpit
+pnpm exec supabase db reset    # aplica migraciones + seed
+cp .env.example .env.local     # y pega URL y llaves que imprime `supabase status`
+pnpm dev                       # http://localhost:3000
+```
+
+Usuarios del seed (contraseña `inmocrm123`):
+
+| Inmobiliaria | Dueño | Asesores |
+|---|---|---|
+| Casas del Bajío | ana@casasdelbajio.mx | luis@casasdelbajio.mx, marta@casasdelbajio.mx |
+| Hogar Capital | beto@hogarcapital.mx | carla@hogarcapital.mx |
+
+Los correos (invitaciones, recuperación) se ven en Mailpit: http://127.0.0.1:54324
+
+Captura de leads (landing, Meta, correos de portales): ver [`docs/captura-de-leads.md`](docs/captura-de-leads.md).
+
+Agente de WhatsApp (configuración, plantillas y cómo probarlo en la terminal con `pnpm agente:probar`): ver [`docs/agente-whatsapp.md`](docs/agente-whatsapp.md).
+
+Agenda y Google Calendar: ver [`docs/agenda-google-calendar.md`](docs/agenda-google-calendar.md).
+
+Recordatorios y reactivación (plantillas y cron): ver [`docs/seguimientos.md`](docs/seguimientos.md).
+
+Reportes del dueño (definiciones de cada indicador): ver [`docs/reportes.md`](docs/reportes.md).
+
+**Despliegue a producción**: [`docs/despliegue.md`](docs/despliegue.md). Revisión de seguridad: [`docs/revision-seguridad.md`](docs/revision-seguridad.md).
+
+Verificación:
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test   # ESLint, TypeScript, Vitest
+pnpm exec supabase test db                 # pgTAP: aislamiento entre inmobiliarias y roles
+```

@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: Lint, tipos, pruebas y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Build
+        run: pnpm build
+        env:
+          # Valores de ejemplo: el build no se conecta a nada.
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
+          SUPABASE_SECRET_KEY: sb_secret_ci
+
+  base-de-datos:
+    name: Migraciones, seed y pruebas pgTAP en Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Levantar Supabase (aplica migraciones y seed)
+        run: pnpm exec supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - name: Pruebas pgTAP (RLS, triggers, reportes)
+        run: pnpm exec supabase test db
+      - name: Tipos de TypeScript al día con el esquema
+        continue-on-error: true
+        run: |
+          pnpm exec supabase gen types typescript --local --schema public > /tmp/database.types.ts
+          pnpm exec prettier --write /tmp/database.types.ts > /dev/null
+          diff -u src/lib/supabase/database.types.ts /tmp/database.types.ts
