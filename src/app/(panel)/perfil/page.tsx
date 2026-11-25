@@ -17,7 +17,7 @@ const MENSAJES_GOOGLE: Record<string, { tipo: "ok" | "error"; texto: string }> =
   cancelado: { tipo: "error", texto: "Cancelaste la conexión con Google." },
   invalido: { tipo: "error", texto: "El enlace de conexión venció o no es válido. Inténtalo de nuevo." },
   permisos: { tipo: "error", texto: "Faltó autorizar el acceso al calendario. Vuelve a conectar y marca todos los permisos." },
-  en_uso: { tipo: "error", texto: "Esa cuenta de Google ya está conectada por otro usuario de InmoCRM." },
+  en_uso: { tipo: "error", texto: "Esa cuenta de Google ya está conectada por otro usuario de Capta." },
   no_configurado: { tipo: "error", texto: "Google Calendar todavía no está configurado en el servidor." },
   error: { tipo: "error", texto: "No pudimos conectar con Google. Inténtalo de nuevo." },
 };
@@ -47,7 +47,7 @@ export default async function PaginaPerfil({ searchParams }: PageProps<"/perfil"
         <h2 className="text-base font-semibold">Google Calendar</h2>
         <p className="mb-4 mt-1 text-sm text-slate-600">
           Conéctalo para que el agente sólo ofrezca horarios en los que estás libre y tus visitas aparezcan solas en tu
-          calendario. InmoCRM sólo ve si estás ocupado (no el detalle de tus eventos) y administra las visitas que agenda.
+          calendario. Capta sólo ve si estás ocupado (no el detalle de tus eventos) y administra las visitas que agenda.
         </p>
         {calendario?.activa ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">

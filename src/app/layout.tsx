@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "InmoCRM", template: "%s · InmoCRM" },
+  title: { default: "Capta", template: "%s · Capta" },
   description: "Del anuncio a la visita agendada, sin calificar leads a mano.",
 };
 

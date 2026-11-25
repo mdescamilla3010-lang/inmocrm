@@ -27,7 +27,7 @@ export async function invitarMiembro(_: EstadoFormulario, fd: FormData): Promise
   if (error || !data.user) {
     const yaExiste = error?.code === "email_exists" || error?.status === 422;
     return {
-      error: yaExiste ? "Ese correo ya tiene una cuenta en InmoCRM." : "No pudimos enviar la invitación. Intenta de nuevo.",
+      error: yaExiste ? "Ese correo ya tiene una cuenta en Capta." : "No pudimos enviar la invitación. Intenta de nuevo.",
       valores,
     };
   }

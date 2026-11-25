@@ -44,7 +44,7 @@ export async function conectarPaginaMeta(_: EstadoFormulario, fd: FormData): Pro
     .eq("identificador_externo", r.data.pageId)
     .maybeSingle();
   if (existente && existente.inmobiliaria_id !== dueno.inmobiliariaId) {
-    return { errores: { pageId: "Esa página ya está conectada a otra cuenta de InmoCRM." }, valores: { ...valores, token: "" } };
+    return { errores: { pageId: "Esa página ya está conectada a otra cuenta de Capta." }, valores: { ...valores, token: "" } };
   }
 
   const fila = {
@@ -91,7 +91,7 @@ export async function conectarWhatsApp(_: EstadoFormulario, fd: FormData): Promi
     .eq("identificador_externo", r.data.phoneNumberId)
     .maybeSingle();
   if (otro && otro.inmobiliaria_id !== dueno.inmobiliariaId) {
-    return { errores: { phoneNumberId: "Ese número ya está conectado a otra cuenta de InmoCRM." }, valores: sinToken };
+    return { errores: { phoneNumberId: "Ese número ya está conectado a otra cuenta de Capta." }, valores: sinToken };
   }
 
   // Un número por inmobiliaria: se reemplaza el anterior si lo hay.

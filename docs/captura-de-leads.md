@@ -28,7 +28,7 @@ curl -X POST http://localhost:3000/api/leads/landing \
 
 1. En tu app de Meta for Developers: producto **Webhooks** → objeto *Page* → URL `https://<tu-app>/api/webhooks/meta-leads`, token de verificación = `META_VERIFY_TOKEN`, campo `leadgen`.
 2. Variables: `META_APP_SECRET`, `META_VERIFY_TOKEN`, `ENCRYPTION_KEY`.
-3. En InmoCRM (dueño): Configuración → Integraciones → conectar la página con su ID y un token de página de larga duración con `leads_retrieval`.
+3. En Capta (dueño): Configuración → Integraciones → conectar la página con su ID y un token de página de larga duración con `leads_retrieval`.
 4. Prueba con la [herramienta de prueba de anuncios para clientes potenciales](https://developers.facebook.com/tools/lead-ads-testing) de Meta.
 
 Para simular sólo el webhook (sin Graph API) se puede firmar un cuerpo a mano:

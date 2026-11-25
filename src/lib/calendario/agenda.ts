@@ -47,7 +47,7 @@ export type Disponibilidad = {
 };
 
 /**
- * Horarios libres de un asesor: horario de visitas − sus citas en InmoCRM −
+ * Horarios libres de un asesor: horario de visitas − sus citas en Capta −
  * lo ocupado en su Google Calendar. Si Google falla, lanza error: es mejor no
  * ofrecer horarios que empalmar una visita con su agenda personal.
  */
@@ -159,7 +159,7 @@ export async function agendarCita(
           lead.score ? `Score: ${ETIQUETA_SCORE[lead.score]}${lead.score_motivo ? ` — ${lead.score_motivo}` : ""}` : null,
           propiedad ? `Propiedad: ${propiedad.titulo}${propiedad.clave ? ` (${propiedad.clave})` : ""}` : null,
           args.origen === "agente" ? "Agendada por el agente de WhatsApp." : null,
-          `Ver en InmoCRM: ${envPublico().NEXT_PUBLIC_APP_URL}/leads/${lead.id}`,
+          `Ver en Capta: ${envPublico().NEXT_PUBLIC_APP_URL}/leads/${lead.id}`,
         ]
           .filter(Boolean)
           .join("\n"),
@@ -170,7 +170,7 @@ export async function agendarCita(
       await admin.from("citas").update({ google_event_id: evento.id }).eq("inmobiliaria_id", args.inmobiliariaId).eq("id", cita.id);
       enGoogle = true;
     } catch (e) {
-      // La cita existe en InmoCRM aunque Google falle; el asesor la ve en el panel.
+      // La cita existe en Capta aunque Google falle; el asesor la ve en el panel.
       console.error("[agenda] no se pudo crear el evento en Google", e);
     }
   }

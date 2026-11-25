@@ -52,7 +52,7 @@ export default async function PaginaAgenda() {
         <h2 className="text-base font-semibold">Calendarios del equipo</h2>
         <p className="mb-4 mt-1 text-sm text-slate-600">
           Cada asesor conecta su Google Calendar desde “Mi perfil”. Sin calendario conectado, el agente sólo evita choques con
-          las visitas registradas en InmoCRM.
+          las visitas registradas en Capta.
         </p>
         {!googleConfigurado ? (
           <p className="mb-3 text-sm text-amber-800">Google Calendar aún no está configurado en el servidor (GOOGLE_CLIENT_ID).</p>

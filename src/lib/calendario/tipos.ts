@@ -7,7 +7,7 @@ export type EventoCalendario = {
   descripcion: string;
   ubicacion: string | null;
   zonaHoraria: string;
-  /** Para encontrar el evento desde InmoCRM. */
+  /** Para encontrar el evento desde Capta. */
   citaId: string;
 };
 

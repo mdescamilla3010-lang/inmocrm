@@ -153,7 +153,7 @@ futuras se pueden revisar al llegar a esa fase.
 - **Round robin = "el que lleva más tiempo sin recibir un lead"** (`usuarios.ultima_asignacion_en`). Un puntero único no sirve para la asignación por zona (los candidatos son un subconjunto y siempre ganaría el primero). La elección es atómica en `siguiente_asesor_round_robin()` (bloquea la fila de la inmobiliaria), sólo invocable por el servidor.
 - **Deduplicación**: primero por teléfono (único por inmobiliaria), luego por correo. Una recaptura sólo **completa** datos faltantes (nunca sobrescribe), queda en la línea de tiempo y **reabre** el lead si estaba perdido/descartado (salvo opt-out).
 - **Zona del lead**: la de la propiedad de interés si se conoce; si no, se busca en el texto (respuestas del formulario, mensaje) contra nombre y sinónimos de las zonas, sin acentos y por palabra completa.
-- **Liga con el catálogo**: los correos de portal y la landing traen una referencia; se liga si coincide con `propiedades.clave`. Hay que usar la misma clave en el portal y en InmoCRM.
+- **Liga con el catálogo**: los correos de portal y la landing traen una referencia; se liga si coincide con `propiedades.clave`. Hay que usar la misma clave en el portal y en Capta.
 - **Correo entrante con Postmark Inbound** (adaptador en `lib/leads/correo/entrante.ts`; cambiar de proveedor es escribir otro adaptador). Webhook protegido con Basic auth. El parser es tolerante (etiquetas comunes + respaldo por expresiones regulares), pero **se probó sólo con correos sintéticos**: hay que validarlo con correos reales.
 - **Meta Lead Ads**: el token de cada página se guarda cifrado; el lead se pide a la Graph API con el token en el header. Webhook verificado con `X-Hub-Signature-256`, se responde 200 de inmediato y se procesa con `after()`.
 - **Landing**: endpoint público con CORS abierto, clave pública por inmobiliaria (regenerable), honeypot anti-spam. **Pendiente**: rate limiting (se recomienda en el CDN/WAF del despliegue).
@@ -178,7 +178,7 @@ futuras se pueden revisar al llegar a esa fase.
 - **Disponibilidad** = horario de visitas de la inmobiliaria − citas activas del asesor − ocupado en su Google Calendar, con margen de traslado (default 30 min) y anticipación mínima (default 2 h), en horarios cada 30 min durante 14 días. Cálculo puro en `lib/calendario/disponibilidad.ts`; la conversión hora local ↔ UTC usa `Intl` (probada con Ciudad de México y con Tijuana, que tiene horario de verano).
 - **Google Calendar sin `googleapis`**: `fetch` directo a OAuth, free/busy y eventos (`lib/calendario/google.ts`) detrás de `ProveedorCalendario`. Permisos mínimos: `calendar.freebusy` + `calendar.events`. El `state` de OAuth va firmado (HMAC) con caducidad de 10 min y debe coincidir con el usuario con sesión.
 - **Fallo de Google = no ofrecer horarios**: mejor registrar la preferencia que arriesgar un empalme con la agenda personal. Un token revocado marca la conexión como inactiva y el asesor ve "debe reconectar".
-- **Doble validación al agendar**: se recalcula la disponibilidad justo antes de guardar y la restricción `citas_sin_empalmes` de la base impide choques aunque dos procesos agenden a la vez. Si el evento de Google falla, la cita se conserva en InmoCRM.
+- **Doble validación al agendar**: se recalcula la disponibilidad justo antes de guardar y la restricción `citas_sin_empalmes` de la base impide choques aunque dos procesos agenden a la vez. Si el evento de Google falla, la cita se conserva en Capta.
 - **El agente nunca confirma una visita que `agendar_cita` no guardó**; reprogramar = cancelar + ofrecer de nuevo. `registrar_interes_visita` queda como respaldo cuando ningún horario le acomoda.
 - **Visitas en la línea de tiempo** por trigger (agendada, cancelada con motivo, realizada, no asistió).
 - **Agendar desde el panel**: horarios libres o uno manual (el asesor puede acordar fuera del horario de visitas; la base igual impide empalmes).
@@ -199,3 +199,8 @@ futuras se pueden revisar al llegar a esa fase.
 - **Definiciones explícitas** (ver `docs/reportes.md`): % a cita sobre leads del periodo; tiempo de respuesta sin leads manuales; visitas por fecha de la cita.
 - **Comparación** contra el periodo anterior de igual duración; "este mes" contra los mismos días del mes anterior. Proporciones en puntos, conteos en %. La variación lleva flecha y texto, no sólo color.
 - **Gráficas sin librería** (HTML/CSS, servidor): todas de una sola serie → un color, validado contra la superficie con el validador de la guía de visualización; barras ≤ 24 px, valor en la punta, tooltip por mouse y teclado, tablas con los mismos datos.
+
+### Cambio de nombre a Capta
+
+- El producto se llama **Capta**. Cambian todos los textos visibles: interfaz, títulos de página, correos de Supabase, mensajes de error y la descripción del evento en Google Calendar.
+- Los **identificadores técnicos conservan `inmocrm`** para no romper lo que ya está en producción: secretos de Vault (`inmocrm_app_url`, `inmocrm_cron_secret`), trabajo de pg_cron (`inmocrm-seguimientos`), propiedad privada de los eventos de Google (`inmocrm_cita_id`, con la que se encuentran eventos ya creados), `project_id` de Supabase, nombre del paquete y del repositorio.

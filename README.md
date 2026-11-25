@@ -1,4 +1,4 @@
-# InmoCRM — Plataforma SaaS de IA para inmobiliarias en México
+# Capta — Plataforma SaaS de IA para inmobiliarias en México
 
 MVP de una plataforma SaaS de IA para inmobiliarias en México. El objetivo es llevar al lead desde el anuncio hasta la visita agendada, sin que un humano tenga que calificarlo.
 

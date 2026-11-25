@@ -31,7 +31,7 @@ Leads que llegan por Meta Ads, landing o portales reciben primero la
    = `WHATSAPP_VERIFY_TOKEN`, suscrito al campo `messages`.
 4. **Variables**: `ANTHROPIC_API_KEY`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`,
    `ENCRYPTION_KEY` (ver `.env.example`).
-5. En InmoCRM (dueño): **Configuración → Integraciones → WhatsApp Business**:
+5. En Capta (dueño): **Configuración → Integraciones → WhatsApp Business**:
    Phone number ID, número, token y nombres de las plantillas.
 6. **Configuración → Agente IA**: nombre del agente e indicaciones propias
    (tono, datos de la empresa, políticas de apartado, etc.).
@@ -45,7 +45,7 @@ Leads que llegan por Meta Ads, landing o portales reciben primero la
 
 **Aviso al asesor** (`aviso_asesor`, opcional):
 
-> Hola, el prospecto {{1}} {{2}}. Revisa su conversación en InmoCRM.
+> Hola, el prospecto {{1}} {{2}}. Revisa su conversación en Capta.
 
 Meta tarda de minutos a horas en aprobar una plantilla. Mientras tanto, el
 agente sólo contesta a quien escriba primero.
