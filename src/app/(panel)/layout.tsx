@@ -12,7 +12,7 @@ export default async function LayoutPanel({ children }: LayoutProps<"/">) {
     <div className="min-h-screen md:flex">
       <aside className="border-b border-slate-200 bg-white md:flex md:w-60 md:shrink-0 md:flex-col md:border-r md:border-b-0">
         <div className="px-4 pt-4 md:px-5 md:pt-6">
-          <p className="text-lg font-bold tracking-tight text-emerald-800">InmoCRM</p>
+          <p className="text-lg font-bold tracking-tight text-emerald-800">Capta</p>
           <p className="truncate text-sm text-slate-600" title={usuario.inmobiliaria.nombre}>
             {usuario.inmobiliaria.nombre}
           </p>

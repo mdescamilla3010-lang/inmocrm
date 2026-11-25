@@ -27,7 +27,7 @@
 
 > Hola {{1}}, ¿sigues buscando propiedad? En {{2}} tenemos opciones que podrían interesarte. Respóndenos y te ayudamos; si ya no te interesa, escribe BAJA.
 
-Después, en InmoCRM: **Configuración → Integraciones → WhatsApp Business → Plantillas de seguimiento** (nombre de cada plantilla y su texto).
+Después, en Capta: **Configuración → Integraciones → WhatsApp Business → Plantillas de seguimiento** (nombre de cada plantilla y su texto).
 
 ### 2. Interruptores
 

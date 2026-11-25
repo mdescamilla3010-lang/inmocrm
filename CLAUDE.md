@@ -1,4 +1,4 @@
-# CLAUDE.md — Convenciones de InmoCRM
+# CLAUDE.md — Convenciones de Capta
 
 Guía para cualquier persona (o agente) que trabaje en este repo. El brief del producto está en `README.md`; la arquitectura y las decisiones en `docs/arquitectura.md`.
 

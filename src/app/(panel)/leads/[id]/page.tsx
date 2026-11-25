@@ -339,7 +339,7 @@ async function datosVisitas(leadId: string, asesorId: string | null, inmobiliari
     try {
       // La disponibilidad del asesor incluye su Google Calendar (sólo con credenciales de servidor).
       const disp = await disponibilidadAsesor(crearClienteAdmin(), inmobiliariaId, asesorId);
-      if (disp.fuente === "solo_citas") aviso = "El asesor no ha conectado su Google Calendar: sólo se evitan choques con visitas de InmoCRM.";
+      if (disp.fuente === "solo_citas") aviso = "El asesor no ha conectado su Google Calendar: sólo se evitan choques con visitas de Capta.";
       const porDia = new Map<string, { valor: string; etiqueta: string }[]>();
       const fmtDia = new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: zh });
       const fmtHora = new Intl.DateTimeFormat("es-MX", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: zh });

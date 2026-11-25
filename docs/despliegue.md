@@ -87,7 +87,7 @@ pg_cron) + servicios externos (Anthropic, Meta/WhatsApp, Google, Postmark).
 5. Plantillas (idioma `es_MX`; textos sugeridos en `docs/agente-whatsapp.md` y
    `docs/seguimientos.md`): bienvenida, recordatorio de visita, reactivación y
    aviso al asesor.
-6. En InmoCRM: Configuración → Integraciones → WhatsApp Business.
+6. En Capta: Configuración → Integraciones → WhatsApp Business.
 
 ## 4. Meta: Lead Ads
 

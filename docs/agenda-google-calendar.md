@@ -8,7 +8,7 @@ Prospecto: "¿Puedo verla el sábado en la mañana?"
         ▼
 ofrecer_horarios(fecha, franja)
         │  horario de visitas de la inmobiliaria
-        │  − citas del asesor en InmoCRM
+        │  − citas del asesor en Capta
         │  − ocupado en su Google Calendar (free/busy)
         │  − margen de traslado, anticipación mínima
         ▼
@@ -17,12 +17,12 @@ ofrecer_horarios(fecha, franja)
         ▼
 agendar_cita(inicio) ── vuelve a validar el horario
         │                └─ la base impide empalmes aunque dos procesos agenden a la vez
-        ├─ cita en InmoCRM (lead → "cita agendada", línea de tiempo)
+        ├─ cita en Capta (lead → "cita agendada", línea de tiempo)
         └─ evento en el Google Calendar del asesor (con teléfono, score y liga al lead)
 ```
 
 - Si el asesor **no conectó** Google Calendar, el agente igual agenda, evitando
-  sólo los choques con las visitas registradas en InmoCRM.
+  sólo los choques con las visitas registradas en Capta.
 - Si Google **falla** (o el asesor retiró el acceso), el agente no ofrece
   horarios: registra la preferencia del prospecto y el asesor coordina. Es
   preferible a empalmar una visita con la agenda personal del asesor.
@@ -42,7 +42,7 @@ agendar_cita(inicio) ── vuelve a validar el horario
    margen de traslado y anticipación mínima.
 4. Cada asesor: **Mi perfil → Conectar Google Calendar**.
 
-InmoCRM sólo pide ver si el asesor está ocupado (no el contenido de sus
+Capta sólo pide ver si el asesor está ocupado (no el contenido de sus
 eventos) y administrar los eventos que crea. El refresh token se guarda cifrado.
 
 ## Operación
